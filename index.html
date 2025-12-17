@@ -43,14 +43,10 @@
       display:flex; gap:12px; align-items:center; justify-content:space-between;
       flex-wrap:wrap;
     }
-    .brand{
-      display:flex; flex-direction:column; gap:2px;
-    }
+    .brand{display:flex; flex-direction:column; gap:2px;}
     h1{font-size: 18px; margin:0; letter-spacing:.3px}
     .sub{font-size: 12px; color:var(--muted)}
-    .toolbar{
-      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
-    }
+    .toolbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
     .pill{
       border:1px solid var(--stroke);
       background: rgba(255,255,255,.05);
@@ -191,11 +187,7 @@
       padding: 10px 12px 0;
     }
 
-    .yearGrid{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
+    .yearGrid{display:grid; grid-template-columns: 1fr; gap: 10px;}
     .yearCard{
       border:1px solid rgba(255,255,255,.12);
       background: rgba(0,0,0,.12);
@@ -208,9 +200,7 @@
     }
     .yearCard .head b{font-size:12px}
     .small{font-size:11px; color: rgba(255,255,255,.70)}
-    .yearInputs{
-      display:grid; grid-template-columns: 1fr 1fr; gap:10px;
-    }
+    .yearInputs{display:grid; grid-template-columns: 1fr 1fr; gap:10px;}
     .badge{
       display:inline-flex; align-items:center; gap:6px;
       font-size: 11px;
@@ -220,19 +210,10 @@
       background: rgba(255,255,255,.06);
       color: rgba(255,255,255,.82);
     }
-    .rightSide{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap: 14px;
-    }
+    .rightSide{display:grid; grid-template-columns: 1fr; gap: 14px;}
 
-    .split{
-      display:grid; grid-template-columns: 1fr 1fr; gap: 12px;
-      padding: 12px;
-    }
-    @media (max-width: 980px){
-      .split{grid-template-columns: 1fr;}
-    }
+    .split{display:grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px;}
+    @media (max-width: 980px){ .split{grid-template-columns: 1fr;} }
     .block{
       border:1px solid rgba(255,255,255,.12);
       background: rgba(0,0,0,.12);
@@ -289,7 +270,7 @@
       background: rgba(255,255,255,.03);
     }
 
-    /* AJOUT MINIMAL : bloc crédit masqué */
+    /* Crédit */
     .creditBox{display:none;}
     .creditBox.show{display:block;}
   </style>
@@ -361,7 +342,7 @@
           </div>
         </div>
 
-        <!-- ✅ AJOUT MINIMAL : "Acheter à crédit" + champs (invisibles si OFF) -->
+        <!-- Crédit -->
         <div class="pill" style="margin: 2px 0 10px;" title="Active l'option crédit. Si OFF, le simulateur reste exactement identique.">
           <input id="loanToggle" type="checkbox" />
           <span>Acheter à crédit</span>
@@ -389,7 +370,6 @@
             puis une <b>courbe de comparaison</b> apparaît.
           </div>
         </div>
-        <!-- FIN AJOUT -->
 
         <div class="btnRow">
           <button id="fillDefaultsBtn" type="button">Remplir tableau (défaut)</button>
@@ -454,12 +434,20 @@
               <canvas id="chartDiv" height="180"></canvas>
             </div>
 
-            <!-- ✅ AJOUT : courbe comparatif (masquée tant que crédit OFF) -->
+            <!-- Comparatif crédit -->
             <div class="chartCard" id="compareWrap" style="display:none;">
               <div class="chartTitle">Comparatif (si crédit ON) : Comptant (valeur totale) vs Crédit (valeur nette)</div>
               <canvas id="chartCompare" height="220"></canvas>
+
               <div class="foot" style="padding:8px 0 0;">
-                Valeur nette (crédit) = valeur des parts + cash − capital restant dû.
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                  <span>Mensualité (hors assurance) : <b id="loanMonthlyOut">—</b></span>
+                  <span>Intérêts payés (cumul) : <b id="loanInterestOut">—</b></span>
+                  <span>Capital restant dû (fin) : <b id="loanRemainOut">—</b></span>
+                </div>
+                <div style="margin-top:6px;">
+                  Valeur nette (crédit) = valeur des parts + cash − capital restant dû.
+                </div>
               </div>
             </div>
           </div>
@@ -596,18 +584,19 @@
   const reinvestToggle = el("reinvestToggle");
   const reinvestState = el("reinvestState");
 
-  // AJOUT MINIMAL
   const loanToggle = el("loanToggle");
   const loanState = el("loanState");
   const creditBox = el("creditBox");
   const compareWrap = el("compareWrap");
+
+  // pour redraw canvas comparatif
+  let __lastCompare = null;
 
   function updateReinvestBadge(){
     reinvestState.textContent = reinvestToggle.checked ? "ON" : "OFF";
     reinvestState.style.borderColor = reinvestToggle.checked ? "rgba(102,242,194,.45)" : "rgba(255,213,138,.55)";
   }
 
-  // AJOUT MINIMAL
   function updateLoanUI(){
     const on = loanToggle.checked;
     loanState.textContent = on ? "ON" : "OFF";
@@ -670,7 +659,6 @@
     el("fractional").value = "yes";
     reinvestToggle.checked = true;
 
-    // AJOUT MINIMAL : reset crédit
     loanToggle.checked = false;
     el("loanAmount").value = 200000;
     el("loanYears").value = 20;
@@ -736,7 +724,6 @@
       );
     }
 
-    // Série A (ambre)
     ctx.strokeStyle = "rgba(255,213,138,.95)";
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -744,7 +731,6 @@
     for (let i=1; i<seriesA.length; i++) ctx.lineTo(x(i), y(seriesA[i]));
     ctx.stroke();
 
-    // Série B (cyan)
     ctx.strokeStyle = "rgba(95,227,255,.95)";
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -820,6 +806,15 @@
     if (!reinvest) drawLineChart(el("chartDiv"), sDivCash, { zeroBase:true });
   }
 
+  function redrawCompareChart(){
+    const wrap = el("compareWrap");
+    const canvas = el("chartCompare");
+    if (!wrap || !canvas) return;
+    if (wrap.style.display === "none") return;
+    if (!__lastCompare) return;
+    drawDualLineChart(canvas, __lastCompare.comptantValo, __lastCompare.creditNet, { zeroBase:true });
+  }
+
   // ---------- Core Simulation ----------
   function readAnnualInputs(){
     const cards = [...yearGrid.querySelectorAll(".yearCard")];
@@ -841,7 +836,6 @@
     return { parts, spent, leftover: amountEUR - spent };
   }
 
-  // ✅ AJOUT MINIMAL : crédit (mensualité)
   function calcMonthlyLoan(amount, annualRatePct, years){
     const n = Math.max(0, Math.round(years * 12));
     if (n <= 0 || amount <= 0) return 0;
@@ -850,7 +844,6 @@
     return amount * (r / (1 - Math.pow(1 + r, -n)));
   }
 
-  // ✅ AJOUT MINIMAL : une simulation "crédit" séparée (sans toucher aux calculs comptant)
   function simulateCredit({
     years, delay, allowFractional, reinvest, annual,
     initial, monthly, initialCash,
@@ -861,13 +854,13 @@
     let cash = Math.max(0, initialCash);
     let lots = [];
 
-    // dette
     let remaining = Math.max(0, loanAmount);
     const loanPay = calcMonthlyLoan(remaining, loanRate, loanYears);
     const loanMonths = Math.max(0, Math.round(loanYears * 12));
     const rLoan = Math.max(0, loanRate / 100 / 12);
 
-    // achat initial : apport (initial) + crédit (loanAmount), au prix de l’année 1
+    let interestPaidTotal = 0;
+
     {
       const y0 = annual[0] || {price:0, ratePct:0};
       const res = buyParts(initial + loanAmount, y0.price, allowFractional);
@@ -875,11 +868,8 @@
       cash += res.leftover;
     }
 
-    let cashDivOnly = 0;
-
-    // séries mensuelles
-    const sNet = [];   // valeur nette (valo - dette)
-    const sValo = [];  // (optionnel)
+    const sNet = [];
+    const sValo = [];
     const sRemain = [];
 
     function currentYearIndex(m){ return Math.min(years-1, Math.floor(m/12)); }
@@ -900,26 +890,23 @@
       const priceVal = annual[y]?.price ?? 0;
       const ratePct  = annual[y]?.ratePct ?? 0;
 
-      // achat au prix N-1 (comme ton code comptant)
       const priceBuy = (y === 0)
         ? (annual[0]?.price ?? 0)
         : (annual[y - 1]?.price ?? 0);
 
-      // mensualité crédit (hors assurance) – on ne touche pas aux achats
       if (remaining > 0 && m < loanMonths && loanPay > 0){
         const interest = remaining * rLoan;
         const principal = Math.max(0, loanPay - interest);
+        interestPaidTotal += interest;
         remaining = Math.max(0, remaining - principal);
       }
 
-      // virements mensuels (même input que comptant)
       if (monthly > 0){
         const res = buyParts(monthly, priceBuy, allowFractional);
         if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
         cash += res.leftover;
       }
 
-      // dividendes (mêmes règles que comptant, mêmes ON/OFF)
       const inService = partsInService(m);
       const monthlyRate = (ratePct / 100) / 12;
       const divThisMonth = inService * priceVal * monthlyRate;
@@ -931,7 +918,6 @@
           cash += res.leftover;
         } else {
           cash += divThisMonth;
-          cashDivOnly += divThisMonth;
         }
       }
 
@@ -945,7 +931,7 @@
       sRemain.push(remaining);
     }
 
-    return { sNet, sValo, sRemain };
+    return { sNet, sValo, sRemain, loanPay, interestPaidTotal, remainingEnd: remaining };
   }
 
   function run(){
@@ -966,7 +952,6 @@
     let lots = [];
     let invested = initial;
 
-    // Achat initial (année 1 au prix de l’année 1)
     {
       const y0 = annual[0] || {price:0, ratePct:0};
       const res = buyParts(initial, y0.price, allowFractional);
@@ -977,7 +962,6 @@
     let divTotal = 0;
     let cashDivOnly = 0;
 
-    // Séries mensuelles
     let sInvest = [];
     let sValo = [];
     let sDivCash = [];
@@ -1011,16 +995,13 @@
     for (let m=0; m<months; m++){
       const y = currentYearIndex(m);
 
-      // Prix de VALORISATION (année N) : dividendes + valorisation
       const priceVal = annual[y]?.price ?? 0;
       const ratePct  = annual[y]?.ratePct ?? 0;
 
-      // Prix d’ACHAT (année N-1) : virements + réinvestissements
       const priceBuy = (y === 0)
         ? (annual[0]?.price ?? 0)
         : (annual[y - 1]?.price ?? 0);
 
-      // Versement mensuel (achat mensuel unique)
       if (monthly > 0){
         invested += monthly;
         const res = buyParts(monthly, priceBuy, allowFractional);
@@ -1028,7 +1009,6 @@
         cash += res.leftover;
       }
 
-      // Dividendes (calcul au prix N) + réinvestissement au prix N-1
       const inService = partsInService(m);
       const monthlyRate = (ratePct / 100) / 12;
       const divThisMonth = inService * priceVal * monthlyRate;
@@ -1047,18 +1027,14 @@
         }
       }
 
-      // Snapshot mensuel : valorisation au prix N
-      {
-        const pAllNow = partsTotal();
-        const partsValueNow = pAllNow * priceVal;
-        const valoNow = partsValueNow + cash;
+      const pAllNow = partsTotal();
+      const partsValueNow = pAllNow * priceVal;
+      const valoNow = partsValueNow + cash;
 
-        sInvest.push(invested);
-        sValo.push(valoNow);
-        sDivCash.push(cashDivOnly);
-      }
+      sInvest.push(invested);
+      sValo.push(valoNow);
+      sDivCash.push(cashDivOnly);
 
-      // Fin d’année
       if ((m % 12) === 11){
         const yy = currentYearIndex(m);
         const pAll = partsTotal();
@@ -1090,20 +1066,15 @@
 
     const totalValueWanted = partsValueAll + cash;
 
-    // ---------- Render KPIs ----------
     el("k_total").textContent = fmtEUR(totalValueWanted);
     el("k_invested").textContent = fmtEUR(invested);
     el("k_divTotal").textContent = fmtEUR(divTotal);
     el("k_partsValue").textContent = fmtEUR(partsValueAll);
 
-    // ---------- Exit tab ----------
     const exitValue = partsValueAll * 0.90;
-    const xParts = el("x_partsValue");
-    const xExit  = el("x_exitValue");
-    if (xParts) xParts.textContent = fmtEUR(partsValueAll);
-    if (xExit)  xExit.textContent  = fmtEUR(exitValue);
+    if (el("x_partsValue")) el("x_partsValue").textContent = fmtEUR(partsValueAll);
+    if (el("x_exitValue")) el("x_exitValue").textContent = fmtEUR(exitValue);
 
-    // ---------- Render Details ----------
     el("d_total").textContent = fmtEUR(totalValueWanted);
     el("d_invested").textContent = fmtEUR(invested);
     el("d_divTotal").textContent = fmtEUR(divTotal);
@@ -1113,14 +1084,12 @@
     el("d_inService").textContent = `${fmtNum(pIn, 2)} parts`;
     el("d_inServiceValue").textContent = fmtEUR(inServiceValue);
 
-    // ---------- Render annual table ----------
     yearTable.innerHTML = "";
     const startY = parseInt(el("startYear").value || "2026", 10);
 
     perYear.forEach((r, i) => {
       const year = startY + i;
       const tr = document.createElement("tr");
-
       tr.innerHTML = `
         <td>${year}</td>
         <td>${fmtEUR(r.price)}</td>
@@ -1136,34 +1105,34 @@
       yearTable.appendChild(tr);
     });
 
-    // ---------- Render charts (comptant, inchangé) ----------
     renderCharts(sInvest, sValo, sDivCash, reinvest);
 
-    // ✅ AJOUT MINIMAL : si crédit ON -> simule crédit + affiche courbe comparatif
-if (loanToggle.checked){
-  const loanAmount = Math.max(0, parseFloat(el("loanAmount").value || "0"));
-  const loanYears  = Math.max(0, parseFloat(el("loanYears").value || "0"));
-  const loanRate   = Math.max(0, parseFloat(el("loanRate").value || "0"));
+    // Crédit ON => calcul + affichage comparatif + intérêts
+    if (loanToggle.checked){
+      const loanAmount = Math.max(0, parseFloat(el("loanAmount").value || "0"));
+      const loanYears  = Math.max(0, parseFloat(el("loanYears").value || "0"));
+      const loanRate   = Math.max(0, parseFloat(el("loanRate").value || "0"));
 
-  const credit = simulateCredit({
-    years, delay, allowFractional, reinvest, annual,
-    initial, monthly, initialCash,
-    loanAmount, loanYears, loanRate
-  });
+      const credit = simulateCredit({
+        years, delay, allowFractional, reinvest, annual,
+        initial, monthly, initialCash: Math.max(0, parseFloat(el("initialCash").value || "0")),
+        loanAmount, loanYears, loanRate
+      });
 
-  if (compareWrap) compareWrap.style.display = "block";
+      if (compareWrap) compareWrap.style.display = "block";
 
-  // ✅ important : dessiner après que le bloc soit réellement visible/layouté
-  requestAnimationFrame(() => {
-    const c = el("chartCompare");
-    if (!c) return;
-    drawDualLineChart(c, sValo, credit.sNet, { zeroBase:true });
-  });
+      __lastCompare = { comptantValo: sValo, creditNet: credit.sNet };
 
-} else {
-  if (compareWrap) compareWrap.style.display = "none";
-}
+      if (el("loanMonthlyOut")) el("loanMonthlyOut").textContent = fmtEUR(credit.loanPay || 0);
+      if (el("loanInterestOut")) el("loanInterestOut").textContent = fmtEUR(credit.interestPaidTotal || 0);
+      if (el("loanRemainOut")) el("loanRemainOut").textContent = fmtEUR(credit.remainingEnd || 0);
 
+      requestAnimationFrame(redrawCompareChart);
+    } else {
+      if (compareWrap) compareWrap.style.display = "none";
+      __lastCompare = null;
+    }
+  }
 
   // ---------- Tabs ----------
   document.querySelectorAll(".tab").forEach(t => {
@@ -1172,18 +1141,14 @@ if (loanToggle.checked){
       document.querySelectorAll(".tabContent").forEach(x => x.classList.remove("active"));
       t.classList.add("active");
       el(t.dataset.tab).classList.add("active");
-      // ✅ si on revient sur Synthèse et que crédit ON, on redessine le comparatif
-if (t.dataset.tab === "kpiTab" && loanToggle.checked) {
-  requestAnimationFrame(run);
-}
 
+      // Redraw comparatif quand on revient sur Synthèse
+      if (t.dataset.tab === "kpiTab") requestAnimationFrame(redrawCompareChart);
     });
   });
 
   // ---------- Events ----------
   reinvestToggle.addEventListener("change", () => { updateReinvestBadge(); run(); });
-
-  // AJOUT MINIMAL
   loanToggle.addEventListener("change", () => { updateLoanUI(); run(); });
 
   el("runBtn").addEventListener("click", run);
@@ -1199,7 +1164,6 @@ if (t.dataset.tab === "kpiTab" && loanToggle.checked) {
     });
   });
 
-  // AJOUT MINIMAL : inputs crédit déclenchent run()
   ["loanAmount","loanYears","loanRate"].forEach(id => {
     el(id).addEventListener("input", run);
     el(id).addEventListener("change", run);
@@ -1212,6 +1176,12 @@ if (t.dataset.tab === "kpiTab" && loanToggle.checked) {
     if (e.target.classList.contains("partPrice") || e.target.classList.contains("distRate")) run();
   });
 
+  window.addEventListener("resize", () => requestAnimationFrame(() => {
+    renderCharts([], [], [], true); // noop-safe
+    redrawCompareChart();
+    run(); // garde ton comportement actuel : resize => recalcul (tu peux enlever si tu veux)
+  }));
+
   // Init
   updateReinvestBadge();
   updateLoanUI();
@@ -1221,4 +1191,5 @@ if (t.dataset.tab === "kpiTab" && loanToggle.checked) {
 </script>
 </body>
 </html>
+
 
