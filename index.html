@@ -387,6 +387,7 @@
         <div class="tabs">
           <div class="tab active" data-tab="kpiTab">Synthèse</div>
           <div class="tab" data-tab="detailsTab">Détails (tes onglets)</div>
+          <div class="tab" data-tab="exitTab">Valeur de sortie</div>
           <div class="tab" data-tab="tableTab">Tableau annuel</div>
         </div>
 
@@ -484,6 +485,28 @@
             </div>
           </div>
         </div>
+        <!-- EXIT TAB -->
+        <div class="tabContent" id="exitTab">
+          <div class="body" style="padding:12px;">
+             <div class="kpis" style="padding:0;">
+              <div class="kpi">
+              <div class="t">Valeur des parts (toutes)</div>
+                <div class="v" id="x_partsValue">—</div>
+                <div class="s">Parts en jouissance + parts en attente</div>
+                </div>
+
+      <div class="kpi">
+        <div class="t">Valeur de sortie (-10%)</div>
+        <div class="v accent" id="x_exitValue">—</div>
+        <div class="s">Hypothèse : décote / frais de sortie de 10%</div>
+      </div>
+    </div>
+
+    <div class="note" style="padding:10px 0 0;">
+      Calcul : <b>valeur de sortie = valeur des parts × 0,90</b>.
+    </div>
+  </div>
+</div>
 
         <!-- TABLE TAB -->
         <div class="tabContent" id="tableTab">
@@ -1026,6 +1049,7 @@ for (let m=0; m<months; m++){
 </script>
 </body>
 </html>
+
 
 
 
