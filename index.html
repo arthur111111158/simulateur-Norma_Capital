@@ -244,7 +244,7 @@
       line-height: 1.35;
     }
 
-    /* ---------- Charts ---------- */
+    /* Charts */
     .charts{
       padding: 0 12px 12px;
       display:grid;
@@ -366,8 +366,7 @@
           </div>
 
           <div class="note" style="padding-top:0;">
-            Quand le crédit est activé : on calcule une <b>SCPI à crédit</b> en plus (avec le même réinvestissement ON/OFF),
-            puis une <b>courbe de comparaison</b> apparaît.
+            Crédit ON : achat initial = <b>apport + crédit</b> au prix de l’année 1, puis affichage d’une <b>courbe comparatif</b>.
           </div>
         </div>
 
@@ -441,6 +440,10 @@
 
               <div class="foot" style="padding:8px 0 0;">
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                  <span>Parts achetées au départ : <b id="loanStartPartsOut">—</b></span>
+                  <span>Montant investi au départ : <b id="loanStartInvestOut">—</b></span>
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:6px;">
                   <span>Mensualité (hors assurance) : <b id="loanMonthlyOut">—</b></span>
                   <span>Intérêts payés (cumul) : <b id="loanInterestOut">—</b></span>
                   <span>Capital restant dû (fin) : <b id="loanRemainOut">—</b></span>
@@ -724,13 +727,16 @@
       );
     }
 
+    // Série A (ambre)
     ctx.strokeStyle = "rgba(255,213,138,.95)";
     ctx.lineWidth = 2;
+    ctx.beginf;
     ctx.beginPath();
     ctx.moveTo(x(0), y(seriesA[0]));
     for (let i=1; i<seriesA.length; i++) ctx.lineTo(x(i), y(seriesA[i]));
     ctx.stroke();
 
+    // Série B (cyan)
     ctx.strokeStyle = "rgba(95,227,255,.95)";
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -821,10 +827,7 @@
     return cards.map((card) => {
       const price = parseFloat(card.querySelector(".partPrice").value || "0");
       const rate = parseFloat(card.querySelector(".distRate").value || "0");
-      return {
-        price: Math.max(0, price),
-        ratePct: Math.max(0, rate)
-      };
+      return { price: Math.max(0, price), ratePct: Math.max(0, rate) };
     });
   }
 
@@ -844,6 +847,7 @@
     return amount * (r / (1 - Math.pow(1 + r, -n)));
   }
 
+  // Simulation crédit (séparée, n'altère pas la partie comptant)
   function simulateCredit({
     years, delay, allowFractional, reinvest, annual,
     initial, monthly, initialCash,
@@ -861,11 +865,17 @@
 
     let interestPaidTotal = 0;
 
+    // ✅ Achat initial = apport + crédit au prix année 1
+    let startParts = 0;
+    let startInvest = 0;
     {
       const y0 = annual[0] || {price:0, ratePct:0};
       const res = buyParts(initial + loanAmount, y0.price, allowFractional);
       if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: 0 });
       cash += res.leftover;
+
+      startParts = res.parts;
+      startInvest = res.spent;
     }
 
     const sNet = [];
@@ -894,6 +904,7 @@
         ? (annual[0]?.price ?? 0)
         : (annual[y - 1]?.price ?? 0);
 
+      // ✅ Amortissement : on cumule les intérêts
       if (remaining > 0 && m < loanMonths && loanPay > 0){
         const interest = remaining * rLoan;
         const principal = Math.max(0, loanPay - interest);
@@ -901,12 +912,14 @@
         remaining = Math.max(0, remaining - principal);
       }
 
+      // Versement mensuel (comme comptant)
       if (monthly > 0){
         const res = buyParts(monthly, priceBuy, allowFractional);
         if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
         cash += res.leftover;
       }
 
+      // Dividendes (mêmes règles ON/OFF)
       const inService = partsInService(m);
       const monthlyRate = (ratePct / 100) / 12;
       const divThisMonth = inService * priceVal * monthlyRate;
@@ -931,7 +944,14 @@
       sRemain.push(remaining);
     }
 
-    return { sNet, sValo, sRemain, loanPay, interestPaidTotal, remainingEnd: remaining };
+    return {
+      sNet, sValo, sRemain,
+      loanPay,
+      interestPaidTotal,
+      remainingEnd: remaining,
+      startParts,
+      startInvest
+    };
   }
 
   function run(){
@@ -952,6 +972,7 @@
     let lots = [];
     let invested = initial;
 
+    // Achat initial (comptant)
     {
       const y0 = annual[0] || {price:0, ratePct:0};
       const res = buyParts(initial, y0.price, allowFractional);
@@ -1044,8 +1065,6 @@
         const partsValue = pAll * (annual[yy]?.price ?? 0);
         const totalValue = partsValue + cash;
 
-        perYear[yy].price = annual[yy]?.price ?? 0;
-        perYear[yy].ratePct = annual[yy]?.ratePct ?? 0;
         perYear[yy].endCash = cash;
         perYear[yy].endPartsValue = partsValue;
         perYear[yy].endTotal = totalValue;
@@ -1066,15 +1085,18 @@
 
     const totalValueWanted = partsValueAll + cash;
 
+    // KPIs
     el("k_total").textContent = fmtEUR(totalValueWanted);
     el("k_invested").textContent = fmtEUR(invested);
     el("k_divTotal").textContent = fmtEUR(divTotal);
     el("k_partsValue").textContent = fmtEUR(partsValueAll);
 
+    // Exit
     const exitValue = partsValueAll * 0.90;
-    if (el("x_partsValue")) el("x_partsValue").textContent = fmtEUR(partsValueAll);
-    if (el("x_exitValue")) el("x_exitValue").textContent = fmtEUR(exitValue);
+    el("x_partsValue").textContent = fmtEUR(partsValueAll);
+    el("x_exitValue").textContent = fmtEUR(exitValue);
 
+    // Details
     el("d_total").textContent = fmtEUR(totalValueWanted);
     el("d_invested").textContent = fmtEUR(invested);
     el("d_divTotal").textContent = fmtEUR(divTotal);
@@ -1084,16 +1106,16 @@
     el("d_inService").textContent = `${fmtNum(pIn, 2)} parts`;
     el("d_inServiceValue").textContent = fmtEUR(inServiceValue);
 
+    // Annual table
     yearTable.innerHTML = "";
     const startY = parseInt(el("startYear").value || "2026", 10);
-
     perYear.forEach((r, i) => {
       const year = startY + i;
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${year}</td>
-        <td>${fmtEUR(r.price)}</td>
-        <td>${fmtNum(r.ratePct,2)}%</td>
+        <td>${fmtEUR(annual[i]?.price ?? 0)}</td>
+        <td>${fmtNum(annual[i]?.ratePct ?? 0,2)}%</td>
         <td>${fmtNum(r.endPartsAll,2)}</td>
         <td>${fmtNum(r.endInService,2)}</td>
         <td>${fmtNum(r.endPending,2)}</td>
@@ -1105,9 +1127,10 @@
       yearTable.appendChild(tr);
     });
 
+    // Charts comptant
     renderCharts(sInvest, sValo, sDivCash, reinvest);
 
-    // Crédit ON => calcul + affichage comparatif + intérêts
+    // Crédit
     if (loanToggle.checked){
       const loanAmount = Math.max(0, parseFloat(el("loanAmount").value || "0"));
       const loanYears  = Math.max(0, parseFloat(el("loanYears").value || "0"));
@@ -1115,21 +1138,24 @@
 
       const credit = simulateCredit({
         years, delay, allowFractional, reinvest, annual,
-        initial, monthly, initialCash: Math.max(0, parseFloat(el("initialCash").value || "0")),
+        initial, monthly,
+        initialCash: Math.max(0, parseFloat(el("initialCash").value || "0")),
         loanAmount, loanYears, loanRate
       });
 
-      if (compareWrap) compareWrap.style.display = "block";
+      compareWrap.style.display = "block";
 
       __lastCompare = { comptantValo: sValo, creditNet: credit.sNet };
 
-      if (el("loanMonthlyOut")) el("loanMonthlyOut").textContent = fmtEUR(credit.loanPay || 0);
-      if (el("loanInterestOut")) el("loanInterestOut").textContent = fmtEUR(credit.interestPaidTotal || 0);
-      if (el("loanRemainOut")) el("loanRemainOut").textContent = fmtEUR(credit.remainingEnd || 0);
+      el("loanStartPartsOut").textContent = `${fmtNum(credit.startParts || 0, 2)} parts`;
+      el("loanStartInvestOut").textContent = fmtEUR(credit.startInvest || 0);
+      el("loanMonthlyOut").textContent = fmtEUR(credit.loanPay || 0);
+      el("loanInterestOut").textContent = fmtEUR(credit.interestPaidTotal || 0);
+      el("loanRemainOut").textContent = fmtEUR(credit.remainingEnd || 0);
 
       requestAnimationFrame(redrawCompareChart);
     } else {
-      if (compareWrap) compareWrap.style.display = "none";
+      compareWrap.style.display = "none";
       __lastCompare = null;
     }
   }
@@ -1141,8 +1167,6 @@
       document.querySelectorAll(".tabContent").forEach(x => x.classList.remove("active"));
       t.classList.add("active");
       el(t.dataset.tab).classList.add("active");
-
-      // Redraw comparatif quand on revient sur Synthèse
       if (t.dataset.tab === "kpiTab") requestAnimationFrame(redrawCompareChart);
     });
   });
@@ -1176,12 +1200,6 @@
     if (e.target.classList.contains("partPrice") || e.target.classList.contains("distRate")) run();
   });
 
-  window.addEventListener("resize", () => requestAnimationFrame(() => {
-    renderCharts([], [], [], true); // noop-safe
-    redrawCompareChart();
-    run(); // garde ton comportement actuel : resize => recalcul (tu peux enlever si tu veux)
-  }));
-
   // Init
   updateReinvestBadge();
   updateLoanUI();
@@ -1191,5 +1209,3 @@
 </script>
 </body>
 </html>
-
-
