@@ -263,7 +263,7 @@
       line-height: 1.35;
     }
 
-    /* ---------- Charts (ajout) ---------- */
+    /* ---------- Charts ---------- */
     .charts{
       padding: 0 12px 12px;
       display:grid;
@@ -386,7 +386,7 @@
       <section class="card">
         <div class="tabs">
           <div class="tab active" data-tab="kpiTab">Synthèse</div>
-          <div class="tab" data-tab="detailsTab">Détails (tes onglets)</div>
+          <div class="tab" data-tab="detailsTab">Détails</div>
           <div class="tab" data-tab="exitTab">Valeur de sortie</div>
           <div class="tab" data-tab="tableTab">Tableau annuel</div>
         </div>
@@ -397,7 +397,7 @@
             <div class="kpi">
               <div class="t">Valorisation totale</div>
               <div class="v accent" id="k_total">—</div>
-              <div class="s">Parts (toutes) + cash dividendes (si non réinvestis)</div>
+              <div class="s">Valeur des parts + cash (dividendes cash si OFF + reliquats)</div>
             </div>
             <div class="kpi">
               <div class="t">Investissement cumulé</div>
@@ -416,7 +416,6 @@
             </div>
           </div>
 
-          <!-- Charts (1 principal + 1 conditionnel) -->
           <div class="charts">
             <div class="chartCard">
               <div class="chartTitle">Investissement cumulé vs Valorisation totale</div>
@@ -430,7 +429,7 @@
           </div>
 
           <div class="foot">
-            Astuce : passe le <b>réinvestissement OFF</b> pour voir le <b>cash dividendes</b> monter (et la valeur des parts évoluer différemment).
+            Astuce : passe le <b>réinvestissement OFF</b> pour voir le <b>cash dividendes</b> monter.
           </div>
         </div>
 
@@ -478,35 +477,36 @@
               <h3>Valorisation totale</h3>
               <div class="lines">
                 <div class="line">
-                  <span>Parts (toutes) + cash dividendes (si non réinvestis)</span>
+                  <span>Valeur des parts + cash</span>
                   <b class="accent" id="d_total">—</b>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
         <!-- EXIT TAB -->
         <div class="tabContent" id="exitTab">
           <div class="body" style="padding:12px;">
-             <div class="kpis" style="padding:0;">
+            <div class="kpis" style="padding:0;">
               <div class="kpi">
-              <div class="t">Valeur des parts (toutes)</div>
+                <div class="t">Valeur des parts (toutes)</div>
                 <div class="v" id="x_partsValue">—</div>
                 <div class="s">Parts en jouissance + parts en attente</div>
-                </div>
+              </div>
 
-      <div class="kpi">
-        <div class="t">Valeur de sortie (-10%)</div>
-        <div class="v accent" id="x_exitValue">—</div>
-        <div class="s">Hypothèse : décote / frais de sortie de 10%</div>
-      </div>
-    </div>
+              <div class="kpi">
+                <div class="t">Valeur de sortie (-10%)</div>
+                <div class="v accent" id="x_exitValue">—</div>
+                <div class="s">Calcul : valeur des parts × 0,90</div>
+              </div>
+            </div>
 
-    <div class="note" style="padding:10px 0 0;">
-      Calcul : <b>valeur de sortie = valeur des parts × 0,90</b>.
-    </div>
-  </div>
-</div>
+            <div class="note" style="padding:10px 0 0;">
+              Ici on applique une décote/frais de sortie de <b>10%</b> sur la <b>valeur des parts</b> (cash non inclus).
+            </div>
+          </div>
+        </div>
 
         <!-- TABLE TAB -->
         <div class="tabContent" id="tableTab">
@@ -535,6 +535,7 @@
             </div>
           </div>
         </div>
+
       </section>
 
     </section>
@@ -600,10 +601,8 @@
   }
 
   function fillDefaults(){
-    const yrs = clamp(parseInt(el("years").value || "1", 10), 1, 100);
     const startPrice = 1000;
     const baseRate = 6.00;
-
     [...yearGrid.querySelectorAll(".yearCard")].forEach((card, i) => {
       const price = Math.round(startPrice * Math.pow(1.02, i));
       card.querySelector(".partPrice").value = price;
@@ -627,7 +626,7 @@
     run();
   }
 
-  // ---------- Charts (ajout) ----------
+  // ---------- Charts ----------
   function drawDualLineChart(canvas, seriesA, seriesB, opts = {}){
     if (!canvas || !seriesA || !seriesB || seriesA.length < 2 || seriesB.length < 2) return;
     const ctx = canvas.getContext("2d");
@@ -655,7 +654,6 @@
     const x = (i) => padL + (i * (plotW / (seriesA.length - 1)));
     const y = (v) => padT + (plotH - ((v - minV) / range) * plotH);
 
-    // Graduations Y
     const ticks = 5;
     ctx.strokeStyle = "rgba(255,255,255,.10)";
     ctx.lineWidth = 1;
@@ -681,7 +679,6 @@
       );
     }
 
-    // Courbe A (Investissement)
     ctx.strokeStyle = "rgba(255,213,138,.95)";
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -689,25 +686,12 @@
     for (let i=1; i<seriesA.length; i++) ctx.lineTo(x(i), y(seriesA[i]));
     ctx.stroke();
 
-    // Courbe B (Valorisation)
     ctx.strokeStyle = "rgba(95,227,255,.95)";
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(x(0), y(seriesB[0]));
     for (let i=1; i<seriesB.length; i++) ctx.lineTo(x(i), y(seriesB[i]));
     ctx.stroke();
-
-    // Légende
-    ctx.textAlign = "left";
-    ctx.textBaseline = "top";
-    ctx.fillStyle = "rgba(255,255,255,.78)";
-    ctx.fillText("Investissement", padL, 4);
-    ctx.fillText("Valorisation", padL + 140, 4);
-
-    ctx.fillStyle = "rgba(255,213,138,.95)";
-    ctx.fillRect(padL - 12, 10, 10, 2);
-    ctx.fillStyle = "rgba(95,227,255,.95)";
-    ctx.fillRect(padL + 128, 10, 10, 2);
   }
 
   function drawLineChart(canvas, values, opts = {}){
@@ -736,7 +720,6 @@
     const x = (i) => padL + (i * (plotW / (values.length - 1)));
     const y = (v) => padT + (plotH - ((v - minV) / range) * plotH);
 
-    // Graduations Y
     const ticks = 4;
     ctx.strokeStyle = "rgba(255,255,255,.10)";
     ctx.lineWidth = 1;
@@ -817,6 +800,7 @@
     let lots = [];
     let invested = initial;
 
+    // Achat initial (année 1 au prix de l’année 1)
     {
       const y0 = annual[0] || {price:0, ratePct:0};
       const res = buyParts(initial, y0.price, allowFractional);
@@ -827,7 +811,7 @@
     let divTotal = 0;
     let cashDivOnly = 0;
 
-    // Séries mensuelles (pour courbes)
+    // Séries mensuelles
     let sInvest = [];
     let sValo = [];
     let sDivCash = [];
@@ -857,88 +841,74 @@
     function partsTotal(){
       return lots.reduce((a, l) => a + l.parts, 0);
     }
-for (let m=0; m<months; m++){
-  const y = currentYearIndex(m);
 
-  // Prix de VALORISATION (année N) : sert à calculer dividendes + valoriser
-  const priceVal = annual[y]?.price ?? 0;
-  const ratePct  = annual[y]?.ratePct ?? 0;
+    for (let m=0; m<months; m++){
+      const y = currentYearIndex(m);
 
-  // Prix d’ACHAT (année N-1) : sert à acheter des parts (virements + réinvestissement)
-  const priceBuy = (y === 0)
-    ? (annual[0]?.price ?? 0)       // année 1 : pas de N-1
-    : (annual[y - 1]?.price ?? 0);  // année N : achats au prix N-1
+      // Prix de VALORISATION (année N) : dividendes + valorisation
+      const priceVal = annual[y]?.price ?? 0;
+      const ratePct  = annual[y]?.ratePct ?? 0;
 
-  // ---- Versement mensuel (achat au prix N-1)
-  if (monthly > 0 && buyTiming === "start"){
-    invested += monthly;
-    const res = buyParts(monthly, priceBuy, allowFractional);
-    if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
-    cash += res.leftover;
-  }
+      // Prix d’ACHAT (année N-1) : virements + réinvestissements
+      const priceBuy = (y === 0)
+        ? (annual[0]?.price ?? 0)
+        : (annual[y - 1]?.price ?? 0);
 
-  // ---- Dividendes (calcul au prix N) + réinvestissement au prix N-1
-  const inService = partsInService(m);
-  const monthlyRate = (ratePct / 100) / 12;
-  const divThisMonth = inService * priceVal * monthlyRate;
+      // Versement mensuel (achat au prix N-1)
+      if (monthly > 0 && buyTiming === "start"){
+        invested += monthly;
+        const res = buyParts(monthly, priceBuy, allowFractional);
+        if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
+        cash += res.leftover;
+      }
 
-  if (divThisMonth > 0){
-    divTotal += divThisMonth;
-    perYear[y].divYear += divThisMonth;
+      // Dividendes (calcul au prix N) + réinvestissement au prix N-1
+      const inService = partsInService(m);
+      const monthlyRate = (ratePct / 100) / 12;
+      const divThisMonth = inService * priceVal * monthlyRate;
 
-    if (reinvest){
-      const res = buyParts(divThisMonth, priceBuy, allowFractional);
-      if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
-      cash += res.leftover;
-    } else {
-      cash += divThisMonth;
-      cashDivOnly += divThisMonth;
-    }
-  }
+      if (divThisMonth > 0){
+        divTotal += divThisMonth;
+        perYear[y].divYear += divThisMonth;
 
-  // ---- Versement mensuel (achat au prix N-1)
-  if (monthly > 0 && buyTiming === "end"){
-    invested += monthly;
-    const res = buyParts(monthly, priceBuy, allowFractional);
-    if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
-    cash += res.leftover;
-  }
+        if (reinvest){
+          const res = buyParts(divThisMonth, priceBuy, allowFractional);
+          if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
+          cash += res.leftover;
+        } else {
+          cash += divThisMonth;
+          cashDivOnly += divThisMonth;
+        }
+      }
 
-  // Snapshot mensuel : valorisation au prix N
-  {
-    const pAllNow = partsTotal();
-    const partsValueNow = pAllNow * priceVal;
-    const valoNow = partsValueNow + (reinvest ? 0 : cashDivOnly);
+      // Versement mensuel (achat au prix N-1)
+      if (monthly > 0 && buyTiming === "end"){
+        invested += monthly;
+        const res = buyParts(monthly, priceBuy, allowFractional);
+        if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
+        cash += res.leftover;
+      }
 
-    sInvest.push(invested);
-    sValo.push(valoNow);
-    sDivCash.push(cashDivOnly);
-  }
+      // Snapshot mensuel : valorisation au prix N
+      {
+        const pAllNow = partsTotal();
+        const partsValueNow = pAllNow * priceVal;
+        const valoNow = partsValueNow + cash;
 
-  // Fin d’année : valeurs au prix de l’année N (inchangé)
-  if ((m % 12) === 11){
-    const yy = currentYearIndex(m);
-    const pAll = partsTotal();
-    const pIn = partsInService(m);
-    const pPend = Math.max(0, pAll - pIn);
+        sInvest.push(invested);
+        sValo.push(valoNow);
+        sDivCash.push(cashDivOnly);
+      }
 
-    const partsValue = pAll * (annual[yy]?.price ?? 0);
-    const totalValue = partsValue + (reinvest ? cash : cash);
-
-    perYear[yy].price = annual[yy]?.price ?? 0;
-    perYear[yy].ratePct = annual[yy]?.ratePct ?? 0;
-    perYear[yy].endCash = cash;
-    perYear[yy].endPartsValue = partsValue;
-    perYear[yy].endTotal = totalValue;
-    perYear[yy].endPartsAll = pAll;
-    perYear[yy].endInService = pIn;
-    perYear[yy].endPending = pPend;
-  }
-}
-
+      // Fin d’année
+      if ((m % 12) === 11){
+        const yy = currentYearIndex(m);
+        const pAll = partsTotal();
+        const pIn = partsInService(m);
+        const pPend = Math.max(0, pAll - pIn);
 
         const partsValue = pAll * (annual[yy]?.price ?? 0);
-        const totalValue = partsValue + (reinvest ? cash : cash);
+        const totalValue = partsValue + cash;
 
         perYear[yy].price = annual[yy]?.price ?? 0;
         perYear[yy].ratePct = annual[yy]?.ratePct ?? 0;
@@ -960,20 +930,20 @@ for (let m=0; m<months; m++){
     const partsValueAll = pAll * lastPrice;
     const inServiceValue = pIn * lastPrice;
 
-    const totalValueWanted = partsValueAll + (reinvest ? 0 : cashDivOnly);
+    const totalValueWanted = partsValueAll + cash;
 
     // ---------- Render KPIs ----------
     el("k_total").textContent = fmtEUR(totalValueWanted);
     el("k_invested").textContent = fmtEUR(invested);
     el("k_divTotal").textContent = fmtEUR(divTotal);
     el("k_partsValue").textContent = fmtEUR(partsValueAll);
-  const exitValue = partsValueAll * 0.90;
 
-const xParts = el("x_partsValue");
-const xExit  = el("x_exitValue");
-if (xParts) xParts.textContent = fmtEUR(partsValueAll);
-if (xExit)  xExit.textContent  = fmtEUR(exitValue);
-
+    // ---------- Exit tab ----------
+    const exitValue = partsValueAll * 0.90;
+    const xParts = el("x_partsValue");
+    const xExit  = el("x_exitValue");
+    if (xParts) xParts.textContent = fmtEUR(partsValueAll);
+    if (xExit)  xExit.textContent  = fmtEUR(exitValue);
 
     // ---------- Render Details ----------
     el("d_total").textContent = fmtEUR(totalValueWanted);
@@ -993,12 +963,9 @@ if (xExit)  xExit.textContent  = fmtEUR(exitValue);
       const year = startY + i;
       const tr = document.createElement("tr");
 
-      // Valorisation fin = valeur des parts + cash dividendes non réinvestis (si OFF)
-      const totalFinAff = r.endPartsValue + (reinvest ? 0 : cashDivOnly);
-
       tr.innerHTML = `
         <td>${year}</td>
-        <td>${fmtEUR(r.price).replace("€","€")}</td>
+        <td>${fmtEUR(r.price)}</td>
         <td>${fmtNum(r.ratePct,2)}%</td>
         <td>${fmtNum(r.endPartsAll,2)}</td>
         <td>${fmtNum(r.endInService,2)}</td>
@@ -1006,7 +973,7 @@ if (xExit)  xExit.textContent  = fmtEUR(exitValue);
         <td>${fmtEUR(r.divYear)}</td>
         <td>${fmtEUR(r.endCash)}</td>
         <td>${fmtEUR(r.endPartsValue)}</td>
-        <td>${fmtEUR(totalFinAff)}</td>
+        <td>${fmtEUR(r.endTotal)}</td>
       `;
       yearTable.appendChild(tr);
     });
@@ -1043,7 +1010,6 @@ if (xExit)  xExit.textContent  = fmtEUR(exitValue);
   el("fillDefaultsBtn").addEventListener("click", () => { fillDefaults(); run(); });
   el("resetBtn").addEventListener("click", resetAll);
 
-  // Delegate inputs inside year grid
   yearGrid.addEventListener("input", (e) => {
     if (e.target.classList.contains("partPrice") || e.target.classList.contains("distRate")) run();
   });
@@ -1056,9 +1022,3 @@ if (xExit)  xExit.textContent  = fmtEUR(exitValue);
 </script>
 </body>
 </html>
-
-
-
-
-
-
