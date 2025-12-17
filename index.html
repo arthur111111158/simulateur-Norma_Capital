@@ -328,7 +328,7 @@
           </div>
           <div>
             <label>Capital initial (€)</label>
-            <input id="initial" type="number" min="0" step="100" value="1000" />
+            <input id="initial" type="number" min="0" step="100" value="10000" />
           </div>
         </div>
 
@@ -579,7 +579,7 @@
       <div class="yearInputs">
         <div>
           <label>Prix de la part (€)</label>
-          <input type="number" min="0" step="1" class="partPrice" value="620" />
+          <input type="number" min="0" step="1" class="partPrice" value="1000" />
         </div>
         <div>
           <label>Taux de distribution annuel (%)</label>
@@ -601,7 +601,7 @@
   }
 
   function fillDefaults(){
-    const startPrice = 1000;
+    const startPrice = 600;
     const baseRate = 6.00;
     [...yearGrid.querySelectorAll(".yearCard")].forEach((card, i) => {
       const price = Math.round(startPrice * Math.pow(1.02, i));
@@ -615,7 +615,7 @@
     el("initial").value = 10000;
     el("monthly").value = 300;
     el("startYear").value = 2026;
-    el("jouissanceDelay").value = 3;
+    el("jouissanceDelay").value = 6;
     el("initialCash").value = 0;
     el("fractional").value = "yes";
     el("buyTiming").value = "start";
@@ -1022,3 +1022,4 @@
 </script>
 </body>
 </html>
+
