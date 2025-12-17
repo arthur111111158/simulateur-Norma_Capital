@@ -967,6 +967,13 @@ for (let m=0; m<months; m++){
     el("k_invested").textContent = fmtEUR(invested);
     el("k_divTotal").textContent = fmtEUR(divTotal);
     el("k_partsValue").textContent = fmtEUR(partsValueAll);
+  const exitValue = partsValueAll * 0.90;
+
+const xParts = el("x_partsValue");
+const xExit  = el("x_exitValue");
+if (xParts) xParts.textContent = fmtEUR(partsValueAll);
+if (xExit)  xExit.textContent  = fmtEUR(exitValue);
+
 
     // ---------- Render Details ----------
     el("d_total").textContent = fmtEUR(totalValueWanted);
@@ -1049,6 +1056,7 @@ for (let m=0; m<months; m++){
 </script>
 </body>
 </html>
+
 
 
 
