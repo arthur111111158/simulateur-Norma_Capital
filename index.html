@@ -332,38 +332,31 @@
           </div>
         </div>
 
-  <div class="row">
+<div class="row">
   <div>
     <label>Virement mensuel (€)</label>
     <input id="monthly" type="number" min="0" step="50" value="300" />
   </div>
+</div>
+
+<div class="row3">
   <div>
-    <label>Mode d’achat parts</label>
-    <select id="buyTiming">
-      <option value="start">Achat au début du mois</option>
-      <option value="end">Achat en fin de mois</option>
+    <label>Année de départ</label>
+    <input id="startYear" type="number" min="1900" step="1" value="2026" />
+  </div>
+  <div>
+    <label>Arrondi parts</label>
+    <select id="fractional">
+      <option value="yes">Parts fractionnaires (autorisé)</option>
+      <option value="no">Parts entières uniquement</option>
     </select>
+  </div>
+  <div>
+    <label>Cash initial (€)</label>
+    <input id="initialCash" type="number" min="0" step="50" value="0" />
   </div>
 </div>
 
-          
-        <div class="row3">
-          <div>
-            <label>Année de départ</label>
-            <input id="startYear" type="number" min="1900" step="1" value="2026" />
-          </div>
-          <div>
-            <label>Arrondi parts</label>
-            <select id="fractional">
-              <option value="yes">Parts fractionnaires (autorisé)</option>
-              <option value="no">Parts entières uniquement</option>
-            </select>
-          </div>
-          <div>
-            <label>Cash initial (€)</label>
-            <input id="initialCash" type="number" min="0" step="50" value="0" />
-          </div>
-        </div>
 
         <div class="btnRow">
           <button id="fillDefaultsBtn" type="button">Remplir tableau (défaut)</button>
@@ -618,7 +611,6 @@
     el("jouissanceDelay").value = 6;
     el("initialCash").value = 0;
     el("fractional").value = "yes";
-    el("buyTiming").value = "start";
     reinvestToggle.checked = true;
     updateReinvestBadge();
     rebuildYearGrid();
@@ -790,7 +782,6 @@
     const monthly = Math.max(0, parseFloat(el("monthly").value || "0"));
     const delay = clamp(parseInt(el("jouissanceDelay").value || "0", 10), 0, 120);
     const allowFractional = el("fractional").value === "yes";
-    const buyTiming = el("buyTiming").value;
     const reinvest = reinvestToggle.checked;
     let cash = Math.max(0, parseFloat(el("initialCash").value || "0"));
 
@@ -853,15 +844,16 @@
       const priceBuy = (y === 0)
         ? (annual[0]?.price ?? 0)
         : (annual[y - 1]?.price ?? 0);
+      
+      // Versement mensuel (achat mensuel unique)
+if (monthly > 0){
+  invested += monthly;
+  const res = buyParts(monthly, priceBuy, allowFractional);
+  if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
+  cash += res.leftover;
+}
 
-      // Versement mensuel (achat au prix N-1)
-      if (monthly > 0 && buyTiming === "start"){
-        invested += monthly;
-        const res = buyParts(monthly, priceBuy, allowFractional);
-        if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
-        cash += res.leftover;
-      }
-
+  
       // Dividendes (calcul au prix N) + réinvestissement au prix N-1
       const inService = partsInService(m);
       const monthlyRate = (ratePct / 100) / 12;
@@ -879,14 +871,6 @@
           cash += divThisMonth;
           cashDivOnly += divThisMonth;
         }
-      }
-
-      // Versement mensuel (achat au prix N-1)
-      if (monthly > 0 && buyTiming === "end"){
-        invested += monthly;
-        const res = buyParts(monthly, priceBuy, allowFractional);
-        if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
-        cash += res.leftover;
       }
 
       // Snapshot mensuel : valorisation au prix N
@@ -996,7 +980,7 @@
   reinvestToggle.addEventListener("change", () => { updateReinvestBadge(); run(); });
   el("runBtn").addEventListener("click", run);
 
-  ["years","initial","monthly","startYear","jouissanceDelay","fractional","buyTiming","initialCash"].forEach(id => {
+  ["years","initial","monthly","startYear","jouissanceDelay","fractional","initialCash"].forEach(id => {
     el(id).addEventListener("change", () => {
       if (id === "years" || id === "startYear") rebuildYearGrid();
       run();
@@ -1022,6 +1006,7 @@
 </script>
 </body>
 </html>
+
 
 
 
