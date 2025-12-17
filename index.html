@@ -1140,23 +1140,30 @@
     renderCharts(sInvest, sValo, sDivCash, reinvest);
 
     // ✅ AJOUT MINIMAL : si crédit ON -> simule crédit + affiche courbe comparatif
-    if (loanToggle.checked){
-      const loanAmount = Math.max(0, parseFloat(el("loanAmount").value || "0"));
-      const loanYears  = Math.max(0, parseFloat(el("loanYears").value || "0"));
-      const loanRate   = Math.max(0, parseFloat(el("loanRate").value || "0"));
+if (loanToggle.checked){
+  const loanAmount = Math.max(0, parseFloat(el("loanAmount").value || "0"));
+  const loanYears  = Math.max(0, parseFloat(el("loanYears").value || "0"));
+  const loanRate   = Math.max(0, parseFloat(el("loanRate").value || "0"));
 
-      const credit = simulateCredit({
-        years, delay, allowFractional, reinvest, annual,
-        initial, monthly, initialCash,
-        loanAmount, loanYears, loanRate
-      });
+  const credit = simulateCredit({
+    years, delay, allowFractional, reinvest, annual,
+    initial, monthly, initialCash,
+    loanAmount, loanYears, loanRate
+  });
 
-      if (compareWrap) compareWrap.style.display = "block";
-      drawDualLineChart(el("chartCompare"), sValo, credit.sNet, { zeroBase:true });
-    } else {
-      if (compareWrap) compareWrap.style.display = "none";
-    }
-  }
+  if (compareWrap) compareWrap.style.display = "block";
+
+  // ✅ important : dessiner après que le bloc soit réellement visible/layouté
+  requestAnimationFrame(() => {
+    const c = el("chartCompare");
+    if (!c) return;
+    drawDualLineChart(c, sValo, credit.sNet, { zeroBase:true });
+  });
+
+} else {
+  if (compareWrap) compareWrap.style.display = "none";
+}
+
 
   // ---------- Tabs ----------
   document.querySelectorAll(".tab").forEach(t => {
@@ -1165,6 +1172,11 @@
       document.querySelectorAll(".tabContent").forEach(x => x.classList.remove("active"));
       t.classList.add("active");
       el(t.dataset.tab).classList.add("active");
+      // ✅ si on revient sur Synthèse et que crédit ON, on redessine le comparatif
+if (t.dataset.tab === "kpiTab" && loanToggle.checked) {
+  requestAnimationFrame(run);
+}
+
     });
   });
 
@@ -1209,3 +1221,4 @@
 </script>
 </body>
 </html>
+
