@@ -834,63 +834,85 @@
     function partsTotal(){
       return lots.reduce((a, l) => a + l.parts, 0);
     }
+for (let m=0; m<months; m++){
+  const y = currentYearIndex(m);
 
-    for (let m=0; m<months; m++){
-      const y = currentYearIndex(m);
-      const { price, ratePct } = annual[y] || {price:0, ratePct:0};
+  // Prix de VALORISATION (année N) : sert à calculer dividendes + valoriser
+  const priceVal = annual[y]?.price ?? 0;
+  const ratePct  = annual[y]?.ratePct ?? 0;
 
-      if (monthly > 0){
-        if (buyTiming === "start"){
-          invested += monthly;
-          const res = buyParts(monthly, price, allowFractional);
-          if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
-          cash += res.leftover;
-        }
-      }
+  // Prix d’ACHAT (année N-1) : sert à acheter des parts (virements + réinvestissement)
+  const priceBuy = (y === 0)
+    ? (annual[0]?.price ?? 0)       // année 1 : pas de N-1
+    : (annual[y - 1]?.price ?? 0);  // année N : achats au prix N-1
 
-      const inService = partsInService(m);
-      const monthlyRate = (ratePct / 100) / 12;
-      const divThisMonth = inService * price * monthlyRate;
+  // ---- Versement mensuel (achat au prix N-1)
+  if (monthly > 0 && buyTiming === "start"){
+    invested += monthly;
+    const res = buyParts(monthly, priceBuy, allowFractional);
+    if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
+    cash += res.leftover;
+  }
 
-      if (divThisMonth > 0){
-        divTotal += divThisMonth;
-        perYear[y].divYear += divThisMonth;
+  // ---- Dividendes (calcul au prix N) + réinvestissement au prix N-1
+  const inService = partsInService(m);
+  const monthlyRate = (ratePct / 100) / 12;
+  const divThisMonth = inService * priceVal * monthlyRate;
 
-        if (reinvest){
-          const res = buyParts(divThisMonth, price, allowFractional);
-          if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
-          cash += res.leftover;
-        } else {
-          cash += divThisMonth;
-          cashDivOnly += divThisMonth;
-        }
-      }
+  if (divThisMonth > 0){
+    divTotal += divThisMonth;
+    perYear[y].divYear += divThisMonth;
 
-      if (monthly > 0){
-        if (buyTiming === "end"){
-          invested += monthly;
-          const res = buyParts(monthly, price, allowFractional);
-          if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
-          cash += res.leftover;
-        }
-      }
+    if (reinvest){
+      const res = buyParts(divThisMonth, priceBuy, allowFractional);
+      if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
+      cash += res.leftover;
+    } else {
+      cash += divThisMonth;
+      cashDivOnly += divThisMonth;
+    }
+  }
 
-      // Snapshot mensuel (pour courbes)
-      {
-        const pAllNow = partsTotal();
-        const partsValueNow = pAllNow * price;
-        const valoNow = partsValueNow + (reinvest ? 0 : cashDivOnly);
+  // ---- Versement mensuel (achat au prix N-1)
+  if (monthly > 0 && buyTiming === "end"){
+    invested += monthly;
+    const res = buyParts(monthly, priceBuy, allowFractional);
+    if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
+    cash += res.leftover;
+  }
 
-        sInvest.push(invested);
-        sValo.push(valoNow);
-        sDivCash.push(cashDivOnly);
-      }
+  // Snapshot mensuel : valorisation au prix N
+  {
+    const pAllNow = partsTotal();
+    const partsValueNow = pAllNow * priceVal;
+    const valoNow = partsValueNow + (reinvest ? 0 : cashDivOnly);
 
-      if ((m % 12) === 11){
-        const yy = currentYearIndex(m);
-        const pAll = partsTotal();
-        const pIn = partsInService(m);
-        const pPend = Math.max(0, pAll - pIn);
+    sInvest.push(invested);
+    sValo.push(valoNow);
+    sDivCash.push(cashDivOnly);
+  }
+
+  // Fin d’année : valeurs au prix de l’année N (inchangé)
+  if ((m % 12) === 11){
+    const yy = currentYearIndex(m);
+    const pAll = partsTotal();
+    const pIn = partsInService(m);
+    const pPend = Math.max(0, pAll - pIn);
+
+    const partsValue = pAll * (annual[yy]?.price ?? 0);
+    const totalValue = partsValue + (reinvest ? cash : cash);
+
+    perYear[yy].price = annual[yy]?.price ?? 0;
+    perYear[yy].ratePct = annual[yy]?.ratePct ?? 0;
+    perYear[yy].endCash = cash;
+    perYear[yy].endPartsValue = partsValue;
+    perYear[yy].endTotal = totalValue;
+    perYear[yy].endPartsAll = pAll;
+    perYear[yy].endInService = pIn;
+    perYear[yy].endPending = pPend;
+  }
+}
+
 
         const partsValue = pAll * (annual[yy]?.price ?? 0);
         const totalValue = partsValue + (reinvest ? cash : cash);
@@ -1004,6 +1026,7 @@
 </script>
 </body>
 </html>
+
 
 
 
