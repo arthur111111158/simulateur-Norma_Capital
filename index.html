@@ -288,6 +288,10 @@
       border: 1px solid rgba(255,255,255,.10);
       background: rgba(255,255,255,.03);
     }
+
+    /* AJOUT MINIMAL : bloc crédit masqué */
+    .creditBox{display:none;}
+    .creditBox.show{display:block;}
   </style>
 </head>
 
@@ -332,31 +336,60 @@
           </div>
         </div>
 
-<div class="row">
-  <div>
-    <label>Virement mensuel (€)</label>
-    <input id="monthly" type="number" min="0" step="50" value="300" />
-  </div>
-</div>
+        <div class="row">
+          <div>
+            <label>Virement mensuel (€)</label>
+            <input id="monthly" type="number" min="0" step="50" value="300" />
+          </div>
+        </div>
 
-<div class="row3">
-  <div>
-    <label>Année de départ</label>
-    <input id="startYear" type="number" min="1900" step="1" value="2026" />
-  </div>
-  <div>
-    <label>Arrondi parts</label>
-    <select id="fractional">
-      <option value="yes">Parts fractionnaires (autorisé)</option>
-      <option value="no">Parts entières uniquement</option>
-    </select>
-  </div>
-  <div>
-    <label>Cash initial (€)</label>
-    <input id="initialCash" type="number" min="0" step="50" value="0" />
-  </div>
-</div>
+        <div class="row3">
+          <div>
+            <label>Année de départ</label>
+            <input id="startYear" type="number" min="1900" step="1" value="2026" />
+          </div>
+          <div>
+            <label>Arrondi parts</label>
+            <select id="fractional">
+              <option value="yes">Parts fractionnaires (autorisé)</option>
+              <option value="no">Parts entières uniquement</option>
+            </select>
+          </div>
+          <div>
+            <label>Cash initial (€)</label>
+            <input id="initialCash" type="number" min="0" step="50" value="0" />
+          </div>
+        </div>
 
+        <!-- ✅ AJOUT MINIMAL : "Acheter à crédit" + champs (invisibles si OFF) -->
+        <div class="pill" style="margin: 2px 0 10px;" title="Active l'option crédit. Si OFF, le simulateur reste exactement identique.">
+          <input id="loanToggle" type="checkbox" />
+          <span>Acheter à crédit</span>
+          <span id="loanState" class="badge">OFF</span>
+        </div>
+
+        <div id="creditBox" class="creditBox">
+          <div class="row3">
+            <div>
+              <label>Montant du crédit (€)</label>
+              <input id="loanAmount" type="number" min="0" step="1000" value="200000" />
+            </div>
+            <div>
+              <label>Durée du crédit (années)</label>
+              <input id="loanYears" type="number" min="1" step="1" value="20" />
+            </div>
+            <div>
+              <label>Taux d’intérêt (%)</label>
+              <input id="loanRate" type="number" min="0" step="0.1" value="2.5" />
+            </div>
+          </div>
+
+          <div class="note" style="padding-top:0;">
+            Quand le crédit est activé : on calcule une <b>SCPI à crédit</b> en plus (avec le même réinvestissement ON/OFF),
+            puis une <b>courbe de comparaison</b> apparaît.
+          </div>
+        </div>
+        <!-- FIN AJOUT -->
 
         <div class="btnRow">
           <button id="fillDefaultsBtn" type="button">Remplir tableau (défaut)</button>
@@ -419,6 +452,15 @@
             <div class="chartCard" id="chartDivWrap">
               <div class="chartTitle">Dividendes cumulés (cash) — visible si réinvestissement OFF</div>
               <canvas id="chartDiv" height="180"></canvas>
+            </div>
+
+            <!-- ✅ AJOUT : courbe comparatif (masquée tant que crédit OFF) -->
+            <div class="chartCard" id="compareWrap" style="display:none;">
+              <div class="chartTitle">Comparatif (si crédit ON) : Comptant (valeur totale) vs Crédit (valeur nette)</div>
+              <canvas id="chartCompare" height="220"></canvas>
+              <div class="foot" style="padding:8px 0 0;">
+                Valeur nette (crédit) = valeur des parts + cash − capital restant dû.
+              </div>
             </div>
           </div>
 
@@ -554,9 +596,24 @@
   const reinvestToggle = el("reinvestToggle");
   const reinvestState = el("reinvestState");
 
+  // AJOUT MINIMAL
+  const loanToggle = el("loanToggle");
+  const loanState = el("loanState");
+  const creditBox = el("creditBox");
+  const compareWrap = el("compareWrap");
+
   function updateReinvestBadge(){
     reinvestState.textContent = reinvestToggle.checked ? "ON" : "OFF";
     reinvestState.style.borderColor = reinvestToggle.checked ? "rgba(102,242,194,.45)" : "rgba(255,213,138,.55)";
+  }
+
+  // AJOUT MINIMAL
+  function updateLoanUI(){
+    const on = loanToggle.checked;
+    loanState.textContent = on ? "ON" : "OFF";
+    loanState.style.borderColor = on ? "rgba(95,227,255,.55)" : "rgba(255,213,138,.55)";
+    creditBox.classList.toggle("show", on);
+    if (!on && compareWrap) compareWrap.style.display = "none";
   }
 
   function makeYearRow(i, year){
@@ -612,7 +669,15 @@
     el("initialCash").value = 0;
     el("fractional").value = "yes";
     reinvestToggle.checked = true;
+
+    // AJOUT MINIMAL : reset crédit
+    loanToggle.checked = false;
+    el("loanAmount").value = 200000;
+    el("loanYears").value = 20;
+    el("loanRate").value = 2.5;
+
     updateReinvestBadge();
+    updateLoanUI();
     rebuildYearGrid();
     fillDefaults();
     run();
@@ -671,6 +736,7 @@
       );
     }
 
+    // Série A (ambre)
     ctx.strokeStyle = "rgba(255,213,138,.95)";
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -678,6 +744,7 @@
     for (let i=1; i<seriesA.length; i++) ctx.lineTo(x(i), y(seriesA[i]));
     ctx.stroke();
 
+    // Série B (cyan)
     ctx.strokeStyle = "rgba(95,227,255,.95)";
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -774,8 +841,116 @@
     return { parts, spent, leftover: amountEUR - spent };
   }
 
+  // ✅ AJOUT MINIMAL : crédit (mensualité)
+  function calcMonthlyLoan(amount, annualRatePct, years){
+    const n = Math.max(0, Math.round(years * 12));
+    if (n <= 0 || amount <= 0) return 0;
+    const r = Math.max(0, annualRatePct) / 100 / 12;
+    if (r === 0) return amount / n;
+    return amount * (r / (1 - Math.pow(1 + r, -n)));
+  }
+
+  // ✅ AJOUT MINIMAL : une simulation "crédit" séparée (sans toucher aux calculs comptant)
+  function simulateCredit({
+    years, delay, allowFractional, reinvest, annual,
+    initial, monthly, initialCash,
+    loanAmount, loanYears, loanRate
+  }){
+    const months = years * 12;
+
+    let cash = Math.max(0, initialCash);
+    let lots = [];
+
+    // dette
+    let remaining = Math.max(0, loanAmount);
+    const loanPay = calcMonthlyLoan(remaining, loanRate, loanYears);
+    const loanMonths = Math.max(0, Math.round(loanYears * 12));
+    const rLoan = Math.max(0, loanRate / 100 / 12);
+
+    // achat initial : apport (initial) + crédit (loanAmount), au prix de l’année 1
+    {
+      const y0 = annual[0] || {price:0, ratePct:0};
+      const res = buyParts(initial + loanAmount, y0.price, allowFractional);
+      if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: 0 });
+      cash += res.leftover;
+    }
+
+    let cashDivOnly = 0;
+
+    // séries mensuelles
+    const sNet = [];   // valeur nette (valo - dette)
+    const sValo = [];  // (optionnel)
+    const sRemain = [];
+
+    function currentYearIndex(m){ return Math.min(years-1, Math.floor(m/12)); }
+    function partsInService(monthIndex){
+      let s = 0;
+      for (const lot of lots){
+        if (lot.buyMonth + delay <= monthIndex) s += lot.parts;
+      }
+      return s;
+    }
+    function partsTotal(){
+      return lots.reduce((a, l) => a + l.parts, 0);
+    }
+
+    for (let m=0; m<months; m++){
+      const y = currentYearIndex(m);
+
+      const priceVal = annual[y]?.price ?? 0;
+      const ratePct  = annual[y]?.ratePct ?? 0;
+
+      // achat au prix N-1 (comme ton code comptant)
+      const priceBuy = (y === 0)
+        ? (annual[0]?.price ?? 0)
+        : (annual[y - 1]?.price ?? 0);
+
+      // mensualité crédit (hors assurance) – on ne touche pas aux achats
+      if (remaining > 0 && m < loanMonths && loanPay > 0){
+        const interest = remaining * rLoan;
+        const principal = Math.max(0, loanPay - interest);
+        remaining = Math.max(0, remaining - principal);
+      }
+
+      // virements mensuels (même input que comptant)
+      if (monthly > 0){
+        const res = buyParts(monthly, priceBuy, allowFractional);
+        if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
+        cash += res.leftover;
+      }
+
+      // dividendes (mêmes règles que comptant, mêmes ON/OFF)
+      const inService = partsInService(m);
+      const monthlyRate = (ratePct / 100) / 12;
+      const divThisMonth = inService * priceVal * monthlyRate;
+
+      if (divThisMonth > 0){
+        if (reinvest){
+          const res = buyParts(divThisMonth, priceBuy, allowFractional);
+          if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
+          cash += res.leftover;
+        } else {
+          cash += divThisMonth;
+          cashDivOnly += divThisMonth;
+        }
+      }
+
+      const pAllNow = partsTotal();
+      const partsValueNow = pAllNow * priceVal;
+      const valoNow = partsValueNow + cash;
+      const netNow = valoNow - remaining;
+
+      sValo.push(valoNow);
+      sNet.push(netNow);
+      sRemain.push(remaining);
+    }
+
+    return { sNet, sValo, sRemain };
+  }
+
   function run(){
     updateReinvestBadge();
+    updateLoanUI();
 
     const years = clamp(parseInt(el("years").value || "1", 10), 1, 100);
     const initial = Math.max(0, parseFloat(el("initial").value || "0"));
@@ -844,16 +1019,15 @@
       const priceBuy = (y === 0)
         ? (annual[0]?.price ?? 0)
         : (annual[y - 1]?.price ?? 0);
-      
-      // Versement mensuel (achat mensuel unique)
-if (monthly > 0){
-  invested += monthly;
-  const res = buyParts(monthly, priceBuy, allowFractional);
-  if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
-  cash += res.leftover;
-}
 
-  
+      // Versement mensuel (achat mensuel unique)
+      if (monthly > 0){
+        invested += monthly;
+        const res = buyParts(monthly, priceBuy, allowFractional);
+        if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
+        cash += res.leftover;
+      }
+
       // Dividendes (calcul au prix N) + réinvestissement au prix N-1
       const inService = partsInService(m);
       const monthlyRate = (ratePct / 100) / 12;
@@ -962,8 +1136,26 @@ if (monthly > 0){
       yearTable.appendChild(tr);
     });
 
-    // ---------- Render charts ----------
+    // ---------- Render charts (comptant, inchangé) ----------
     renderCharts(sInvest, sValo, sDivCash, reinvest);
+
+    // ✅ AJOUT MINIMAL : si crédit ON -> simule crédit + affiche courbe comparatif
+    if (loanToggle.checked){
+      const loanAmount = Math.max(0, parseFloat(el("loanAmount").value || "0"));
+      const loanYears  = Math.max(0, parseFloat(el("loanYears").value || "0"));
+      const loanRate   = Math.max(0, parseFloat(el("loanRate").value || "0"));
+
+      const credit = simulateCredit({
+        years, delay, allowFractional, reinvest, annual,
+        initial, monthly, initialCash,
+        loanAmount, loanYears, loanRate
+      });
+
+      if (compareWrap) compareWrap.style.display = "block";
+      drawDualLineChart(el("chartCompare"), sValo, credit.sNet, { zeroBase:true });
+    } else {
+      if (compareWrap) compareWrap.style.display = "none";
+    }
   }
 
   // ---------- Tabs ----------
@@ -978,6 +1170,10 @@ if (monthly > 0){
 
   // ---------- Events ----------
   reinvestToggle.addEventListener("change", () => { updateReinvestBadge(); run(); });
+
+  // AJOUT MINIMAL
+  loanToggle.addEventListener("change", () => { updateLoanUI(); run(); });
+
   el("runBtn").addEventListener("click", run);
 
   ["years","initial","monthly","startYear","jouissanceDelay","fractional","initialCash"].forEach(id => {
@@ -991,6 +1187,12 @@ if (monthly > 0){
     });
   });
 
+  // AJOUT MINIMAL : inputs crédit déclenchent run()
+  ["loanAmount","loanYears","loanRate"].forEach(id => {
+    el(id).addEventListener("input", run);
+    el(id).addEventListener("change", run);
+  });
+
   el("fillDefaultsBtn").addEventListener("click", () => { fillDefaults(); run(); });
   el("resetBtn").addEventListener("click", resetAll);
 
@@ -1000,15 +1202,10 @@ if (monthly > 0){
 
   // Init
   updateReinvestBadge();
+  updateLoanUI();
   rebuildYearGrid();
   fillDefaults();
   run();
 </script>
 </body>
 </html>
-
-
-
-
-
-
