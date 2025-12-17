@@ -303,7 +303,7 @@
       <div class="pill" title="Si ON, les dividendes achètent des parts. Si OFF, les dividendes restent en cash.">
         <input id="reinvestToggle" type="checkbox" checked />
         <span>Réinvestissement</span>
-        <span id="reinvestState" class="badge">OFF</span>
+        <span id="reinvestState" class="badge">ON</span>
       </div>
       <div class="pill" title="Les parts n'entrent en jouissance qu'après ce délai.">
         <span class="muted">Délai jouissance (mois)</span>
@@ -338,14 +338,7 @@
             <input id="monthly" type="number" min="0" step="50" value="300" />
           </div>
           <div>
-            <label>Mode d’achat parts</label>
-            <select id="buyTiming">
-              <option value="start">Achat au début du mois</option>
-              <option value="end">Achat en fin de mois</option>
-            </select>
-          </div>
-        </div>
-
+          
         <div class="row3">
           <div>
             <label>Année de départ</label>
@@ -1022,6 +1015,7 @@
 </script>
 </body>
 </html>
+
 
 
 
