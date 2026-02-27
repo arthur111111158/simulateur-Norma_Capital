@@ -18,7 +18,9 @@ import {
   BarChart3,
   GitBranch,
   Newspaper,
-  DollarSign
+  Activity,
+  AlertTriangle,
+  Target
 } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, 
@@ -28,7 +30,7 @@ import {
 const QuotePage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { getQuote, getHistory, getSupplyChain, searchAssets, addToWatchlist, watchlist, removeFromWatchlist, news } = useApp();
+  const { getQuote, getHistory, getSupplyChain, searchAssets, addToWatchlist, watchlist, removeFromWatchlist, news, getTechnicalIndicators, getImpactScore } = useApp();
   
   const [symbol, setSymbol] = useState(searchParams.get('symbol') || 'AAPL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,6 +38,8 @@ const QuotePage = () => {
   const [quote, setQuote] = useState(null);
   const [history, setHistory] = useState(null);
   const [supplyChain, setSupplyChain] = useState([]);
+  const [technicals, setTechnicals] = useState(null);
+  const [impactScore, setImpactScore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('1mo');
   const [interval, setIntervalState] = useState('1d');
