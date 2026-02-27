@@ -1,15 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { ScrollArea } from '../components/ui/scroll-area';
+import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { 
   ComposableMap, 
   Geographies, 
   Geography, 
   Marker,
+  Line,
   ZoomableGroup 
 } from 'react-simple-maps';
 import { 
@@ -19,14 +21,17 @@ import {
   Flame,
   Shield,
   Ship,
-  Zap,
+  Plane,
+  Anchor,
   X,
-  ChevronRight
+  ChevronRight,
+  MapPin,
+  Route
 } from 'lucide-react';
 
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
-// Country coordinates for markers
+// Country coordinates for conflict markers
 const countryCoordinates = {
   'Ukraine': [31.1656, 48.3794],
   'Yemen': [42.5, 13.5],
@@ -41,11 +46,35 @@ const countryCoordinates = {
 };
 
 const WorldMapPage = () => {
-  const { conflicts } = useApp();
+  const { conflicts, getShippingRoutes, getShippingPorts, getShippingStats } = useApp();
   const navigate = useNavigate();
   const [selectedConflict, setSelectedConflict] = useState(null);
   const [hoveredConflict, setHoveredConflict] = useState(null);
   const [zoom, setZoom] = useState(1);
+  
+  // Shipping state
+  const [shippingRoutes, setShippingRoutes] = useState([]);
+  const [shippingPorts, setShippingPorts] = useState({ seaports: [], airports: [] });
+  const [shippingStats, setShippingStats] = useState(null);
+  const [activeLayer, setActiveLayer] = useState('all'); // all, maritime, air, conflicts
+  const [showPorts, setShowPorts] = useState(true);
+  const [hoveredRoute, setHoveredRoute] = useState(null);
+  const [selectedRoute, setSelectedRoute] = useState(null);
+
+  // Load shipping data
+  useEffect(() => {
+    const loadShippingData = async () => {
+      const [routesData, portsData, statsData] = await Promise.all([
+        getShippingRoutes('all'),
+        getShippingPorts(),
+        getShippingStats()
+      ]);
+      setShippingRoutes(routesData.routes || []);
+      setShippingPorts(portsData);
+      setShippingStats(statsData);
+    };
+    loadShippingData();
+  }, [getShippingRoutes, getShippingPorts, getShippingStats]);
 
   // Get marker icon based on event type
   const getEventIcon = (eventType) => {
@@ -60,10 +89,18 @@ const WorldMapPage = () => {
 
   // Get severity color
   const getSeverityColor = (severity) => {
-    if (severity >= 8) return '#ef4444'; // red
-    if (severity >= 6) return '#f97316'; // orange
-    if (severity >= 4) return '#eab308'; // yellow
-    return '#22c55e'; // green
+    if (severity >= 8) return '#ef4444';
+    if (severity >= 6) return '#f97316';
+    if (severity >= 4) return '#eab308';
+    return '#22c55e';
+  };
+
+  // Get disruption color for routes
+  const getDisruptionColor = (level, routeType) => {
+    if (level > 0.5) return '#ef4444'; // High disruption - red
+    if (level > 0.2) return '#f97316'; // Medium - orange
+    if (level > 0) return '#eab308'; // Low - yellow
+    return routeType === 'maritime' ? '#3b82f6' : '#8b5cf6'; // Normal - blue for maritime, purple for air
   };
 
   // Get severity badge class
@@ -88,6 +125,29 @@ const WorldMapPage = () => {
     });
   }, [conflicts]);
 
+  // Filter routes based on active layer
+  const filteredRoutes = useMemo(() => {
+    if (activeLayer === 'conflicts') return [];
+    if (activeLayer === 'maritime') return shippingRoutes.filter(r => r.route_type === 'maritime');
+    if (activeLayer === 'air') return shippingRoutes.filter(r => r.route_type === 'air_cargo');
+    return shippingRoutes;
+  }, [shippingRoutes, activeLayer]);
+
+  // Filter ports based on active layer
+  const filteredPorts = useMemo(() => {
+    if (!showPorts || activeLayer === 'conflicts') return { seaports: [], airports: [] };
+    if (activeLayer === 'maritime') return { seaports: shippingPorts.seaports, airports: [] };
+    if (activeLayer === 'air') return { seaports: [], airports: shippingPorts.airports };
+    return shippingPorts;
+  }, [shippingPorts, activeLayer, showPorts]);
+
+  // Format volume
+  const formatVolume = (volume, unit) => {
+    if (volume >= 1000000) return `${(volume / 1000000).toFixed(1)}M ${unit}`;
+    if (volume >= 1000) return `${(volume / 1000).toFixed(0)}K ${unit}`;
+    return `${volume} ${unit}`;
+  };
+
   return (
     <div className="space-y-4" data-testid="worldmap-page">
       {/* Header */}
@@ -99,40 +159,120 @@ const WorldMapPage = () => {
                 <Globe className="w-5 h-5 text-orange-500" />
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-white">Geopolitical Risk Map</h1>
-                <p className="text-sm text-zinc-500">Global conflicts, sanctions & supply chain disruptions</p>
+                <h1 className="text-xl font-semibold text-white">Global Trade & Risk Map</h1>
+                <p className="text-sm text-zinc-500">Shipping routes, conflicts & supply chain disruptions</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              {/* Legend */}
-              <div className="flex items-center gap-3 text-xs">
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                  <span className="text-zinc-500">Critical</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                  <span className="text-zinc-500">High</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                  <span className="text-zinc-500">Medium</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-                  <span className="text-zinc-500">Low</span>
-                </div>
-              </div>
+              {/* Layer Tabs */}
+              <Tabs value={activeLayer} onValueChange={setActiveLayer}>
+                <TabsList className="bg-zinc-900 h-8">
+                  <TabsTrigger value="all" className="text-xs h-6 px-3" data-testid="layer-all">All</TabsTrigger>
+                  <TabsTrigger value="maritime" className="text-xs h-6 px-3" data-testid="layer-maritime">
+                    <Ship className="w-3 h-3 mr-1" />Maritime
+                  </TabsTrigger>
+                  <TabsTrigger value="air" className="text-xs h-6 px-3" data-testid="layer-air">
+                    <Plane className="w-3 h-3 mr-1" />Air Cargo
+                  </TabsTrigger>
+                  <TabsTrigger value="conflicts" className="text-xs h-6 px-3" data-testid="layer-conflicts">
+                    <AlertTriangle className="w-3 h-3 mr-1" />Conflicts
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+
+              {/* Toggle Ports */}
+              <Button 
+                variant={showPorts ? "default" : "outline"} 
+                size="sm" 
+                className="h-8 text-xs"
+                onClick={() => setShowPorts(!showPorts)}
+              >
+                <Anchor className="w-3 h-3 mr-1" />
+                Ports
+              </Button>
+
               {/* Active Events Count */}
               <div className="px-3 py-1.5 bg-red-500/10 border border-red-500/30 rounded-sm">
                 <span className="text-red-500 font-mono text-sm">
-                  {conflicts.filter(c => c.status === 'ongoing').length} ACTIVE EVENTS
+                  {conflicts.filter(c => c.status === 'ongoing').length} EVENTS
                 </span>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Stats Row */}
+      {shippingStats && (
+        <div className="grid grid-cols-6 gap-3">
+          <Card className="nexus-card">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <Ship className="w-4 h-4 text-blue-500" />
+                <div>
+                  <p className="text-[10px] text-zinc-500">Maritime Routes</p>
+                  <p className="font-mono text-lg text-white">{shippingStats.stats?.total_maritime_routes || 0}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="nexus-card">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <Plane className="w-4 h-4 text-purple-500" />
+                <div>
+                  <p className="text-[10px] text-zinc-500">Air Routes</p>
+                  <p className="font-mono text-lg text-white">{shippingStats.stats?.total_air_routes || 0}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="nexus-card">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <Anchor className="w-4 h-4 text-cyan-500" />
+                <div>
+                  <p className="text-[10px] text-zinc-500">Major Ports</p>
+                  <p className="font-mono text-lg text-white">{shippingStats.stats?.total_ports || 0}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="nexus-card">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-violet-500" />
+                <div>
+                  <p className="text-[10px] text-zinc-500">Cargo Airports</p>
+                  <p className="font-mono text-lg text-white">{shippingStats.stats?.total_airports || 0}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="nexus-card">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-orange-500" />
+                <div>
+                  <p className="text-[10px] text-zinc-500">Routes at Risk</p>
+                  <p className="font-mono text-lg text-orange-500">{shippingStats.stats?.routes_affected_by_conflicts || 0}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="nexus-card">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <TrendingDown className="w-4 h-4 text-red-500" />
+                <div>
+                  <p className="text-[10px] text-zinc-500">Volume at Risk</p>
+                  <p className="font-mono text-lg text-red-500">{(shippingStats.stats?.volume_at_risk_percent || 0).toFixed(1)}%</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="grid grid-cols-12 gap-4">
@@ -169,8 +309,72 @@ const WorldMapPage = () => {
                       }
                     </Geographies>
 
+                    {/* Shipping Routes */}
+                    {filteredRoutes.map((route, i) => {
+                      const isHovered = hoveredRoute?.id === route.id;
+                      const isSelected = selectedRoute?.id === route.id;
+                      const color = getDisruptionColor(route.disruption_level, route.route_type);
+                      const strokeWidth = isHovered || isSelected ? 3 : route.is_strategic ? 2 : 1;
+                      const opacity = isHovered || isSelected ? 1 : 0.6;
+                      
+                      return (
+                        <Line
+                          key={route.id}
+                          from={route.origin.coordinates}
+                          to={route.destination.coordinates}
+                          stroke={color}
+                          strokeWidth={strokeWidth}
+                          strokeLinecap="round"
+                          strokeDasharray={route.route_type === 'air_cargo' ? "4,4" : "0"}
+                          style={{
+                            cursor: 'pointer',
+                            opacity: opacity
+                          }}
+                          onMouseEnter={() => setHoveredRoute(route)}
+                          onMouseLeave={() => setHoveredRoute(null)}
+                          onClick={() => setSelectedRoute(route)}
+                        />
+                      );
+                    })}
+
+                    {/* Seaport Markers */}
+                    {filteredPorts.seaports?.map((port, i) => (
+                      <Marker key={`port-${port.id}`} coordinates={port.coordinates}>
+                        <g transform="translate(-6, -6)">
+                          <circle
+                            cx="6"
+                            cy="6"
+                            r={port.is_major_hub ? 5 : 3}
+                            fill="#3b82f6"
+                            stroke="#09090b"
+                            strokeWidth={1}
+                            opacity={0.8}
+                          />
+                        </g>
+                      </Marker>
+                    ))}
+
+                    {/* Airport Markers */}
+                    {filteredPorts.airports?.map((airport, i) => (
+                      <Marker key={`airport-${airport.id}`} coordinates={airport.coordinates}>
+                        <g transform="translate(-6, -6)">
+                          <rect
+                            x="2"
+                            y="2"
+                            width={airport.is_major_hub ? 8 : 5}
+                            height={airport.is_major_hub ? 8 : 5}
+                            fill="#8b5cf6"
+                            stroke="#09090b"
+                            strokeWidth={1}
+                            opacity={0.8}
+                            transform={`rotate(45, 6, 6)`}
+                          />
+                        </g>
+                      </Marker>
+                    ))}
+
                     {/* Conflict Markers */}
-                    {markers.map((conflict, i) => {
+                    {(activeLayer === 'all' || activeLayer === 'conflicts') && markers.map((conflict, i) => {
                       const Icon = getEventIcon(conflict.event_type);
                       const color = getSeverityColor(conflict.severity);
                       const isSelected = selectedConflict?.id === conflict.id;
@@ -188,7 +392,6 @@ const WorldMapPage = () => {
                             transform="translate(-12, -12)"
                             style={{ cursor: 'pointer' }}
                           >
-                            {/* Pulse animation for high severity */}
                             {conflict.severity >= 7 && (
                               <circle
                                 cx="12"
@@ -199,7 +402,6 @@ const WorldMapPage = () => {
                                 className="animate-pulse"
                               />
                             )}
-                            {/* Main circle */}
                             <circle
                               cx="12"
                               cy="12"
@@ -208,7 +410,6 @@ const WorldMapPage = () => {
                               stroke="#09090b"
                               strokeWidth={2}
                             />
-                            {/* Icon placeholder (simple representation) */}
                             <text
                               x="12"
                               y="16"
@@ -226,8 +427,35 @@ const WorldMapPage = () => {
                   </ZoomableGroup>
                 </ComposableMap>
 
-                {/* Hover Tooltip */}
-                {hoveredConflict && !selectedConflict && (
+                {/* Route Hover Tooltip */}
+                {hoveredRoute && !selectedRoute && (
+                  <div className="absolute top-4 left-4 bg-zinc-900/95 border border-zinc-700 rounded-sm p-3 max-w-xs z-10">
+                    <div className="flex items-center gap-2 mb-2">
+                      {hoveredRoute.route_type === 'maritime' ? (
+                        <Ship className="w-4 h-4 text-blue-500" />
+                      ) : (
+                        <Plane className="w-4 h-4 text-purple-500" />
+                      )}
+                      <h4 className="text-sm font-medium text-white">{hoveredRoute.name}</h4>
+                    </div>
+                    <p className="text-xs text-zinc-400">
+                      {hoveredRoute.origin.name} → {hoveredRoute.destination.name}
+                    </p>
+                    <div className="flex items-center gap-3 mt-2 text-xs">
+                      <span className="text-zinc-400">{hoveredRoute.distance_km.toLocaleString()} km</span>
+                      <span className="text-zinc-400">{hoveredRoute.average_transit_days.toFixed(0)} days</span>
+                      <span className="text-emerald-500">{formatVolume(hoveredRoute.annual_volume, hoveredRoute.volume_unit)}/yr</span>
+                    </div>
+                    {hoveredRoute.disruption_level > 0 && (
+                      <Badge className="mt-2 bg-red-500/20 text-red-500 rounded-none text-[10px]">
+                        {(hoveredRoute.disruption_level * 100).toFixed(0)}% Disruption Risk
+                      </Badge>
+                    )}
+                  </div>
+                )}
+
+                {/* Conflict Hover Tooltip */}
+                {hoveredConflict && !selectedConflict && !hoveredRoute && (
                   <div className="absolute top-4 left-4 bg-zinc-900 border border-zinc-700 rounded-sm p-3 max-w-xs z-10">
                     <h4 className="text-sm font-medium text-white">{hoveredConflict.title}</h4>
                     <p className="text-xs text-zinc-500 mt-1">{hoveredConflict.country}</p>
@@ -241,6 +469,37 @@ const WorldMapPage = () => {
                     </div>
                   </div>
                 )}
+
+                {/* Legend */}
+                <div className="absolute bottom-4 left-4 bg-zinc-900/90 border border-zinc-800 rounded-sm p-2 text-[10px]">
+                  <p className="text-zinc-400 mb-2 font-medium">Legend</p>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-0.5 bg-blue-500"></div>
+                      <span className="text-zinc-400">Maritime Route</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-0.5 bg-purple-500 border-dashed" style={{borderTop: '2px dashed #8b5cf6'}}></div>
+                      <span className="text-zinc-400">Air Cargo Route</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-0.5 bg-red-500"></div>
+                      <span className="text-zinc-400">Disrupted Route</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span className="text-zinc-400">Seaport</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-purple-500 rotate-45"></div>
+                      <span className="text-zinc-400">Airport</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                      <span className="text-zinc-400">Conflict Zone</span>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Zoom Controls */}
                 <div className="absolute bottom-4 right-4 flex flex-col gap-1">
@@ -268,8 +527,96 @@ const WorldMapPage = () => {
 
         {/* Sidebar */}
         <div className="col-span-4 space-y-4">
-          {/* Selected Conflict Detail */}
-          {selectedConflict ? (
+          {/* Selected Route Detail */}
+          {selectedRoute ? (
+            <Card className="nexus-card border-blue-500/50">
+              <CardHeader className="card-header-terminal">
+                <CardTitle className="card-header-title flex items-center gap-2">
+                  {selectedRoute.route_type === 'maritime' ? (
+                    <Ship className="w-4 h-4 text-blue-500" />
+                  ) : (
+                    <Plane className="w-4 h-4 text-purple-500" />
+                  )}
+                  Route Details
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={() => setSelectedRoute(null)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </CardHeader>
+              <CardContent className="p-4">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-medium text-white">{selectedRoute.name}</h3>
+                    <Badge className={`mt-1 rounded-none ${selectedRoute.route_type === 'maritime' ? 'bg-blue-500/20 text-blue-500' : 'bg-purple-500/20 text-purple-500'}`}>
+                      {selectedRoute.route_type === 'maritime' ? 'Maritime' : 'Air Cargo'}
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 bg-zinc-900 rounded-sm">
+                      <p className="text-[10px] text-zinc-500 uppercase">Origin</p>
+                      <p className="font-medium text-white text-sm">{selectedRoute.origin.name}</p>
+                      <p className="text-xs text-zinc-400">{selectedRoute.origin.country}</p>
+                    </div>
+                    <div className="p-3 bg-zinc-900 rounded-sm">
+                      <p className="text-[10px] text-zinc-500 uppercase">Destination</p>
+                      <p className="font-medium text-white text-sm">{selectedRoute.destination.name}</p>
+                      <p className="text-xs text-zinc-400">{selectedRoute.destination.country}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2 bg-zinc-900 rounded-sm text-center">
+                      <p className="text-[10px] text-zinc-500">Distance</p>
+                      <p className="font-mono text-sm text-white">{(selectedRoute.distance_km / 1000).toFixed(1)}K km</p>
+                    </div>
+                    <div className="p-2 bg-zinc-900 rounded-sm text-center">
+                      <p className="text-[10px] text-zinc-500">Transit</p>
+                      <p className="font-mono text-sm text-white">{selectedRoute.average_transit_days.toFixed(0)} days</p>
+                    </div>
+                    <div className="p-2 bg-zinc-900 rounded-sm text-center">
+                      <p className="text-[10px] text-zinc-500">Volume/Yr</p>
+                      <p className="font-mono text-sm text-emerald-500">{formatVolume(selectedRoute.annual_volume, selectedRoute.volume_unit)}</p>
+                    </div>
+                  </div>
+
+                  {selectedRoute.chokepoints?.length > 0 && (
+                    <div>
+                      <p className="text-xs text-zinc-500 uppercase mb-2">Strategic Chokepoints</p>
+                      <div className="flex flex-wrap gap-1">
+                        {selectedRoute.chokepoints.map((cp, i) => (
+                          <Badge key={i} variant="outline" className="rounded-none text-xs text-cyan-400 border-cyan-500/30">
+                            {cp}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedRoute.disruption_level > 0 && (
+                    <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-red-400 uppercase font-medium">Disruption Risk</span>
+                        <span className="font-mono text-lg text-red-500">{(selectedRoute.disruption_level * 100).toFixed(0)}%</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {selectedRoute.affected_by_conflicts?.map((conflict, i) => (
+                          <Badge key={i} className="bg-red-500/20 text-red-400 rounded-none text-[10px]">
+                            {conflict}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ) : selectedConflict ? (
             <Card className="nexus-card border-orange-500/50">
               <CardHeader className="card-header-terminal">
                 <CardTitle className="card-header-title">Event Details</CardTitle>
@@ -311,17 +658,6 @@ const WorldMapPage = () => {
                   </div>
 
                   <div>
-                    <p className="text-xs text-zinc-500 uppercase mb-2">Transmission Channels</p>
-                    <div className="flex flex-wrap gap-1">
-                      {selectedConflict.transmission_channels?.map((channel, i) => (
-                        <Badge key={i} variant="outline" className="rounded-none text-xs text-blue-400 border-blue-500/30">
-                          {channel}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
                     <p className="text-xs text-zinc-500 uppercase mb-2">Affected Assets</p>
                     <div className="flex flex-wrap gap-1">
                       {selectedConflict.affected_assets?.map((asset, i) => (
@@ -336,101 +672,132 @@ const WorldMapPage = () => {
                       ))}
                     </div>
                   </div>
-
-                  <div>
-                    <p className="text-xs text-zinc-500 uppercase mb-2">Sources</p>
-                    <div className="flex flex-wrap gap-1">
-                      {selectedConflict.sources?.map((source, i) => (
-                        <span key={i} className="text-xs text-zinc-400">{source}{i < selectedConflict.sources.length - 1 && ', '}</span>
-                      ))}
-                    </div>
-                  </div>
                 </div>
               </CardContent>
             </Card>
           ) : (
+            /* Routes List */
             <Card className="nexus-card">
               <CardHeader className="card-header-terminal">
                 <CardTitle className="card-header-title flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-orange-500" />
-                  Active Events
+                  <Route className="w-4 h-4 text-blue-500" />
+                  {activeLayer === 'conflicts' ? 'Active Events' : 'Shipping Routes'}
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <ScrollArea className="h-[400px]">
-                  {conflicts.map((conflict, i) => {
-                    const Icon = getEventIcon(conflict.event_type);
-                    return (
+                  {activeLayer === 'conflicts' ? (
+                    conflicts.map((conflict, i) => {
+                      const Icon = getEventIcon(conflict.event_type);
+                      return (
+                        <div
+                          key={conflict.id || i}
+                          className="p-3 border-b border-zinc-800/50 hover:bg-zinc-800/30 cursor-pointer"
+                          onClick={() => setSelectedConflict(conflict)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div 
+                              className="w-8 h-8 rounded-sm flex items-center justify-center flex-shrink-0"
+                              style={{ backgroundColor: `${getSeverityColor(conflict.severity)}20` }}
+                            >
+                              <Icon className="w-4 h-4" style={{ color: getSeverityColor(conflict.severity) }} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm text-white">{conflict.title}</h4>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[10px] text-zinc-500">{conflict.country}</span>
+                                <Badge className={`${getSeverityBadgeClass(conflict.severity)} rounded-none text-[9px]`}>
+                                  {conflict.severity}/10
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    filteredRoutes.map((route, i) => (
                       <div
-                        key={conflict.id || i}
-                        className="p-3 border-b border-zinc-800/50 hover:bg-zinc-800/30 cursor-pointer transition-colors duration-75"
-                        onClick={() => setSelectedConflict(conflict)}
-                        data-testid={`conflict-list-item-${i}`}
+                        key={route.id}
+                        className="p-3 border-b border-zinc-800/50 hover:bg-zinc-800/30 cursor-pointer"
+                        onClick={() => setSelectedRoute(route)}
+                        data-testid={`route-item-${route.id}`}
                       >
                         <div className="flex items-start gap-3">
-                          <div 
-                            className="w-8 h-8 rounded-sm flex items-center justify-center flex-shrink-0"
-                            style={{ backgroundColor: `${getSeverityColor(conflict.severity)}20` }}
-                          >
-                            <Icon className="w-4 h-4" style={{ color: getSeverityColor(conflict.severity) }} />
+                          <div className={`w-8 h-8 rounded-sm flex items-center justify-center flex-shrink-0 ${route.route_type === 'maritime' ? 'bg-blue-500/20' : 'bg-purple-500/20'}`}>
+                            {route.route_type === 'maritime' ? (
+                              <Ship className="w-4 h-4 text-blue-500" />
+                            ) : (
+                              <Plane className="w-4 h-4 text-purple-500" />
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-sm text-white">{conflict.title}</h4>
+                            <h4 className="text-sm text-white">{route.name}</h4>
+                            <p className="text-[10px] text-zinc-500">{route.origin.name} → {route.destination.name}</p>
                             <div className="flex items-center gap-2 mt-1">
-                              <span className="text-[10px] text-zinc-500">{conflict.country}</span>
-                              <Badge className={`${getSeverityBadgeClass(conflict.severity)} rounded-none text-[9px] px-1 py-0`}>
-                                {conflict.severity}/10
-                              </Badge>
+                              <span className="text-[10px] text-zinc-400">{formatVolume(route.annual_volume, route.volume_unit)}/yr</span>
+                              {route.disruption_level > 0 && (
+                                <Badge className="bg-red-500/20 text-red-400 rounded-none text-[9px]">
+                                  {(route.disruption_level * 100).toFixed(0)}% Risk
+                                </Badge>
+                              )}
                             </div>
                           </div>
                           <ChevronRight className="w-4 h-4 text-zinc-600 flex-shrink-0" />
                         </div>
                       </div>
-                    );
-                  })}
+                    ))
+                  )}
                 </ScrollArea>
               </CardContent>
             </Card>
           )}
 
-          {/* Impact Summary */}
-          <Card className="nexus-card">
-            <CardHeader className="card-header-terminal">
-              <CardTitle className="card-header-title flex items-center gap-2">
-                <TrendingDown className="w-4 h-4 text-orange-500" />
-                Market Impact Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3">
-              <div className="space-y-2">
-                {['Energy', 'Agriculture', 'Semiconductors', 'Shipping'].map((sector, i) => {
-                  const impactedConflicts = conflicts.filter(c => 
-                    c.transmission_channels?.some(ch => ch.toLowerCase().includes(sector.toLowerCase()))
-                  );
-                  const avgImpact = impactedConflicts.length > 0 
-                    ? impactedConflicts.reduce((sum, c) => sum + (c.impact_score || 0), 0) / impactedConflicts.length
-                    : 0;
-                  
-                  return (
-                    <div key={sector} className="flex items-center justify-between py-1.5">
-                      <span className="text-sm text-zinc-400">{sector}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-24 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-orange-500 rounded-full"
-                            style={{ width: `${avgImpact}%` }}
-                          ></div>
-                        </div>
-                        <span className="font-mono text-xs text-zinc-400 w-8 text-right">
-                          {avgImpact.toFixed(0)}
-                        </span>
+          {/* Risk Summary */}
+          {shippingStats?.risk_summary && (
+            <Card className="nexus-card">
+              <CardHeader className="card-header-terminal">
+                <CardTitle className="card-header-title flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-orange-500" />
+                  Risk Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-3">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between py-1.5">
+                    <span className="text-sm text-zinc-400">High Risk Routes</span>
+                    <Badge className="bg-red-500/20 text-red-500 rounded-none">
+                      {shippingStats.risk_summary.high_risk_routes}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5">
+                    <span className="text-sm text-zinc-400">Medium Risk Routes</span>
+                    <Badge className="bg-orange-500/20 text-orange-500 rounded-none">
+                      {shippingStats.risk_summary.medium_risk_routes}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5">
+                    <span className="text-sm text-zinc-400">Low Risk Routes</span>
+                    <Badge className="bg-yellow-500/20 text-yellow-500 rounded-none">
+                      {shippingStats.risk_summary.low_risk_routes}
+                    </Badge>
+                  </div>
+                  {shippingStats.risk_summary.critical_chokepoints?.length > 0 && (
+                    <div className="pt-2 border-t border-zinc-800">
+                      <p className="text-xs text-zinc-500 uppercase mb-2">Critical Chokepoints</p>
+                      <div className="flex flex-wrap gap-1">
+                        {shippingStats.risk_summary.critical_chokepoints.map((cp, i) => (
+                          <Badge key={i} className="bg-red-500/20 text-red-400 rounded-none text-[10px]">
+                            {cp}
+                          </Badge>
+                        ))}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
