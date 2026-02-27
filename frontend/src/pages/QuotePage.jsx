@@ -91,6 +91,7 @@ const QuotePage = () => {
   const [secondaryLoading, setSecondaryLoading] = useState(true);
   const [period, setPeriod] = useState('1mo');
   const [interval, setIntervalState] = useState('1d');
+  const [chartType, setChartType] = useState('area'); // 'area' or 'candlestick'
 
   // Check if in watchlist
   const isInWatchlist = watchlist.some(item => item.symbol === symbol);
