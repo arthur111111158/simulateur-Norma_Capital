@@ -1855,43 +1855,65 @@ async def fetch_yahoo_finance_news(query: str = None, count: int = 15) -> List[N
     """Fetch English financial news from Yahoo Finance"""
     import yfinance as yf
     articles = []
+    seen_titles = set()
     
     try:
-        # Use general finance search if no specific query
-        search_term = query or "stock market finance"
-        search = yf.Search(search_term, news_count=count)
-        news_items = search.news or []
+        # Use multiple financial queries to get diverse news
+        if query:
+            queries = [query]
+        else:
+            queries = ["stock market", "S&P 500", "earnings", "economy finance", "tech stocks"]
         
-        for item in news_items:
+        articles_per_query = max(5, count // len(queries) + 2)
+        
+        for search_term in queries:
+            if len(articles) >= count:
+                break
+                
             try:
-                title = item.get('title', '')
-                if not title:
-                    continue
+                search = yf.Search(search_term, news_count=articles_per_query)
+                news_items = search.news or []
+                
+                for item in news_items:
+                    if len(articles) >= count:
+                        break
+                        
+                    title = item.get('title', '')
+                    if not title or title in seen_titles:
+                        continue
                     
-                # Parse publish time
-                pub_time = item.get('providerPublishTime', 0)
-                if pub_time:
-                    published_at = datetime.fromtimestamp(pub_time, tz=timezone.utc)
-                else:
-                    published_at = datetime.now(timezone.utc)
-                
-                tags = extract_tags(title)
-                
-                article = NewsArticle(
-                    title=title,
-                    description=item.get('summary', title),
-                    content=None,
-                    url=item.get('link', ''),
-                    source=item.get('publisher', 'Yahoo Finance'),
-                    published_at=published_at,
-                    image_url=item.get('thumbnail', {}).get('resolutions', [{}])[0].get('url') if item.get('thumbnail') else None,
-                    tags=tags,
-                    country='us',
-                    language='en'
-                )
-                articles.append(article)
+                    seen_titles.add(title)
+                    
+                    # Parse publish time
+                    pub_time = item.get('providerPublishTime', 0)
+                    if pub_time:
+                        published_at = datetime.fromtimestamp(pub_time, tz=timezone.utc)
+                    else:
+                        published_at = datetime.now(timezone.utc)
+                    
+                    tags = extract_tags(title)
+                    
+                    # Get thumbnail if available
+                    thumbnail_url = None
+                    if item.get('thumbnail') and item['thumbnail'].get('resolutions'):
+                        thumbnail_url = item['thumbnail']['resolutions'][0].get('url')
+                    
+                    article = NewsArticle(
+                        title=title,
+                        description=item.get('summary', title),
+                        content=None,
+                        url=item.get('link', ''),
+                        source=item.get('publisher', 'Yahoo Finance'),
+                        published_at=published_at,
+                        image_url=thumbnail_url,
+                        tags=tags,
+                        country='us',
+                        language='en'
+                    )
+                    articles.append(article)
+                    
             except Exception as e:
-                logger.warning(f"Error parsing Yahoo Finance article: {e}")
+                logger.warning(f"Error fetching Yahoo Finance news for '{search_term}': {e}")
                 continue
                 
     except Exception as e:
