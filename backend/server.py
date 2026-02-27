@@ -2752,6 +2752,244 @@ async def calculate_impact_score(symbol: str) -> Optional[ImpactScore]:
         logger.error(f"Error calculating impact score for {symbol}: {e}")
         return None
 
+# ==================== SHAREHOLDERS DATA ====================
+
+# Major shareholders for French/European companies (manually curated data)
+KNOWN_SHAREHOLDERS = {
+    # French Banks
+    "GLE.PA": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 7.2, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 3.5, "type": "institutional", "country": "USA"},
+            {"name": "Amundi Asset Management", "percent": 3.1, "type": "institutional", "country": "France"},
+            {"name": "Norges Bank", "percent": 2.8, "type": "government", "country": "Norway"},
+            {"name": "State Street Corp", "percent": 2.4, "type": "institutional", "country": "USA"},
+        ]
+    },
+    "BNP.PA": {
+        "major": [
+            {"name": "SFPI-FPIM (Belgian State)", "percent": 7.8, "type": "government", "country": "Belgium"},
+            {"name": "BlackRock Inc.", "percent": 6.1, "type": "institutional", "country": "USA"},
+            {"name": "Amundi Asset Management", "percent": 3.5, "type": "institutional", "country": "France"},
+            {"name": "The Vanguard Group", "percent": 2.9, "type": "institutional", "country": "USA"},
+            {"name": "Norges Bank", "percent": 2.6, "type": "government", "country": "Norway"},
+        ]
+    },
+    "ACA.PA": {
+        "major": [
+            {"name": "SAS Rue La Boétie (Caisses Régionales)", "percent": 56.7, "type": "institutional", "country": "France"},
+            {"name": "BlackRock Inc.", "percent": 3.2, "type": "institutional", "country": "USA"},
+            {"name": "Amundi Asset Management", "percent": 2.8, "type": "institutional", "country": "France"},
+        ]
+    },
+    # French Luxury
+    "MC.PA": {
+        "major": [
+            {"name": "Famille Arnault (Christian Dior SE)", "percent": 48.2, "type": "family", "country": "France"},
+            {"name": "Agache SE", "percent": 9.1, "type": "family", "country": "France"},
+            {"name": "BlackRock Inc.", "percent": 4.8, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 2.1, "type": "institutional", "country": "USA"},
+        ]
+    },
+    "RMS.PA": {
+        "major": [
+            {"name": "Famille Hermès", "percent": 66.6, "type": "family", "country": "France"},
+            {"name": "H51 SAS", "percent": 5.0, "type": "family", "country": "France"},
+            {"name": "BlackRock Inc.", "percent": 3.2, "type": "institutional", "country": "USA"},
+        ]
+    },
+    "KER.PA": {
+        "major": [
+            {"name": "Famille Pinault (Artémis)", "percent": 42.1, "type": "family", "country": "France"},
+            {"name": "BlackRock Inc.", "percent": 5.8, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 2.4, "type": "institutional", "country": "USA"},
+        ]
+    },
+    # French Energy
+    "TTE.PA": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 7.4, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 3.8, "type": "institutional", "country": "USA"},
+            {"name": "Norges Bank", "percent": 2.9, "type": "government", "country": "Norway"},
+            {"name": "Amundi Asset Management", "percent": 2.5, "type": "institutional", "country": "France"},
+        ]
+    },
+    "ENGI.PA": {
+        "major": [
+            {"name": "État Français", "percent": 23.6, "type": "government", "country": "France"},
+            {"name": "CDC (Caisse des Dépôts)", "percent": 4.8, "type": "government", "country": "France"},
+            {"name": "BlackRock Inc.", "percent": 5.2, "type": "institutional", "country": "USA"},
+        ]
+    },
+    # French Aerospace/Defense
+    "AIR.PA": {
+        "major": [
+            {"name": "SOGEPA (État Français)", "percent": 10.9, "type": "government", "country": "France"},
+            {"name": "GZBV (État Allemand)", "percent": 10.9, "type": "government", "country": "Germany"},
+            {"name": "SEPI (État Espagnol)", "percent": 4.1, "type": "government", "country": "Spain"},
+            {"name": "BlackRock Inc.", "percent": 4.5, "type": "institutional", "country": "USA"},
+        ]
+    },
+    "SAF.PA": {
+        "major": [
+            {"name": "État Français (APE)", "percent": 11.2, "type": "government", "country": "France"},
+            {"name": "BlackRock Inc.", "percent": 6.8, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 3.1, "type": "institutional", "country": "USA"},
+        ]
+    },
+    # French Tech
+    "CAP.PA": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 7.9, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 3.4, "type": "institutional", "country": "USA"},
+            {"name": "Amundi Asset Management", "percent": 2.8, "type": "institutional", "country": "France"},
+        ]
+    },
+    "DSY.PA": {
+        "major": [
+            {"name": "Famille Chodron de Courcel", "percent": 32.5, "type": "family", "country": "France"},
+            {"name": "BlackRock Inc.", "percent": 5.2, "type": "institutional", "country": "USA"},
+        ]
+    },
+    # French Healthcare
+    "SAN.PA": {
+        "major": [
+            {"name": "L'Oréal SA", "percent": 9.4, "type": "corporate", "country": "France"},
+            {"name": "BlackRock Inc.", "percent": 6.5, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 3.2, "type": "institutional", "country": "USA"},
+            {"name": "Norges Bank", "percent": 2.8, "type": "government", "country": "Norway"},
+        ]
+    },
+    # French Consumer
+    "OR.PA": {
+        "major": [
+            {"name": "Famille Bettencourt Meyers", "percent": 35.2, "type": "family", "country": "France"},
+            {"name": "Nestlé SA", "percent": 20.1, "type": "corporate", "country": "Switzerland"},
+            {"name": "BlackRock Inc.", "percent": 4.8, "type": "institutional", "country": "USA"},
+        ]
+    },
+    "BN.PA": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 6.2, "type": "institutional", "country": "USA"},
+            {"name": "MFS Investment Management", "percent": 5.4, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 3.1, "type": "institutional", "country": "USA"},
+        ]
+    },
+    # French Industrial
+    "DG.PA": {
+        "major": [
+            {"name": "Qatari Diar (Qatar)", "percent": 5.8, "type": "government", "country": "Qatar"},
+            {"name": "BlackRock Inc.", "percent": 5.5, "type": "institutional", "country": "USA"},
+            {"name": "Amundi Asset Management", "percent": 3.2, "type": "institutional", "country": "France"},
+        ]
+    },
+    "SU.PA": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 7.2, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 3.5, "type": "institutional", "country": "USA"},
+            {"name": "Norges Bank", "percent": 2.9, "type": "government", "country": "Norway"},
+        ]
+    },
+}
+
+async def fetch_shareholders_data(symbol: str) -> ShareholdersData:
+    """Fetch shareholders data from yfinance or known data"""
+    try:
+        ticker = yf.Ticker(symbol)
+        info = ticker.info
+        company_name = info.get('shortName', info.get('longName', symbol))
+        
+        # Get major holders percentages
+        insiders_pct = info.get('heldPercentInsiders', 0) or 0
+        institutions_pct = info.get('heldPercentInstitutions', 0) or 0
+        institutions_count = info.get('institutionCount', 0) or 0
+        float_pct = 1.0 - insiders_pct
+        
+        major_holders = []
+        institutional_holders = []
+        mutual_fund_holders = []
+        
+        # Check if we have known data for this symbol
+        if symbol in KNOWN_SHAREHOLDERS:
+            known = KNOWN_SHAREHOLDERS[symbol]
+            for h in known.get("major", []):
+                major_holders.append(Shareholder(
+                    name=h["name"],
+                    percent_held=h["percent"],
+                    holder_type=h["type"],
+                    country=h.get("country")
+                ))
+        
+        # Try to get institutional holders from yfinance
+        try:
+            inst_holders = ticker.institutional_holders
+            if inst_holders is not None and not inst_holders.empty:
+                for _, row in inst_holders.head(10).iterrows():
+                    pct = float(row.get('pctHeld', 0)) * 100 if 'pctHeld' in row else 0
+                    shares = int(row.get('Shares', 0)) if 'Shares' in row else None
+                    value = float(row.get('Value', 0)) if 'Value' in row else None
+                    change = float(row.get('pctChange', 0)) * 100 if 'pctChange' in row else None
+                    date_rep = str(row.get('Date Reported', '')) if 'Date Reported' in row else None
+                    
+                    institutional_holders.append(Shareholder(
+                        name=str(row.get('Holder', 'Unknown')),
+                        percent_held=round(pct, 2),
+                        shares=shares,
+                        value=value,
+                        holder_type="institutional",
+                        country="USA",  # Most are US-based
+                        change_percent=round(change, 2) if change else None,
+                        date_reported=date_rep
+                    ))
+        except Exception as e:
+            logger.warning(f"Could not get institutional holders for {symbol}: {e}")
+        
+        # Try to get mutual fund holders
+        try:
+            mf_holders = ticker.mutualfund_holders
+            if mf_holders is not None and not mf_holders.empty:
+                for _, row in mf_holders.head(5).iterrows():
+                    pct = float(row.get('pctHeld', 0)) * 100 if 'pctHeld' in row else 0
+                    mutual_fund_holders.append(Shareholder(
+                        name=str(row.get('Holder', 'Unknown')),
+                        percent_held=round(pct, 2),
+                        shares=int(row.get('Shares', 0)) if 'Shares' in row else None,
+                        holder_type="mutual_fund",
+                        country="USA"
+                    ))
+        except Exception:
+            pass
+        
+        # If no major holders found, use institutional holders as major
+        if not major_holders and institutional_holders:
+            major_holders = institutional_holders[:5]
+        
+        return ShareholdersData(
+            symbol=symbol,
+            company_name=company_name,
+            insiders_percent=round(insiders_pct * 100, 2),
+            institutions_percent=round(institutions_pct * 100, 2),
+            institutions_count=int(institutions_count),
+            float_percent=round(float_pct * 100, 2),
+            major_holders=major_holders,
+            institutional_holders=institutional_holders,
+            mutual_fund_holders=mutual_fund_holders
+        )
+    except Exception as e:
+        logger.error(f"Error fetching shareholders for {symbol}: {e}")
+        # Return minimal data
+        return ShareholdersData(
+            symbol=symbol,
+            company_name=symbol,
+            insiders_percent=0,
+            institutions_percent=0,
+            institutions_count=0,
+            float_percent=100,
+            major_holders=[],
+            institutional_holders=[],
+            mutual_fund_holders=[]
+        )
+
 # ==================== API ROUTES ====================
 
 @api_router.get("/")
