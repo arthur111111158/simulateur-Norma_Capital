@@ -746,6 +746,29 @@ class OptionsExpiration(BaseModel):
     symbol: str
     expirations: List[str]
 
+# ==================== SHAREHOLDERS MODELS ====================
+
+class Shareholder(BaseModel):
+    name: str
+    percent_held: float
+    shares: Optional[int] = None
+    value: Optional[float] = None
+    holder_type: str  # institutional, insider, mutual_fund, government, family
+    country: Optional[str] = None
+    change_percent: Optional[float] = None
+    date_reported: Optional[str] = None
+
+class ShareholdersData(BaseModel):
+    symbol: str
+    company_name: str
+    insiders_percent: float
+    institutions_percent: float
+    institutions_count: int
+    float_percent: float
+    major_holders: List[Shareholder]
+    institutional_holders: List[Shareholder]
+    mutual_fund_holders: List[Shareholder]
+
 # ==================== EARNINGS CALENDAR MODELS ====================
 
 class EarningsEvent(BaseModel):
