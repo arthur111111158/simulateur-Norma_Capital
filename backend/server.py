@@ -420,7 +420,7 @@ async def fetch_gdelt_events() -> List[Dict[str, Any]]:
             # GDELT GEO API for geopolitical events with location data
             url = "https://api.gdeltproject.org/api/v2/geo/geo"
             params = {
-                "query": "war conflict tension military sanctions protest",
+                "query": "war conflict",
                 "format": "geojson"
             }
             
@@ -431,7 +431,7 @@ async def fetch_gdelt_events() -> List[Dict[str, Any]]:
                     data = response.json()
                     features = data.get("features", [])
                     logger.info(f"GDELT returned {len(features)} geo features")
-                    return features
+                    return features[:50]  # Limit to 50 features for processing
                 except Exception as parse_error:
                     logger.warning(f"GDELT JSON parse error: {parse_error}")
                     return []
