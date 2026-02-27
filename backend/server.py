@@ -427,6 +427,103 @@ class ImpactScore(BaseModel):
     factors: List[Dict[str, Any]]
     risk_level: str
 
+# ==================== OPTIONS CHAIN MODELS ====================
+
+class OptionContract(BaseModel):
+    contract_symbol: str
+    strike: float
+    last_price: Optional[float] = None
+    bid: Optional[float] = None
+    ask: Optional[float] = None
+    change: Optional[float] = None
+    percent_change: Optional[float] = None
+    volume: Optional[int] = None
+    open_interest: Optional[int] = None
+    implied_volatility: Optional[float] = None
+    in_the_money: bool = False
+
+class OptionsChain(BaseModel):
+    symbol: str
+    expiration_date: str
+    calls: List[OptionContract]
+    puts: List[OptionContract]
+    underlying_price: Optional[float] = None
+
+class OptionsExpiration(BaseModel):
+    symbol: str
+    expirations: List[str]
+
+# ==================== EARNINGS CALENDAR MODELS ====================
+
+class EarningsEvent(BaseModel):
+    symbol: str
+    company_name: str
+    earnings_date: datetime
+    eps_estimate: Optional[float] = None
+    eps_actual: Optional[float] = None
+    revenue_estimate: Optional[float] = None
+    revenue_actual: Optional[float] = None
+    surprise_percent: Optional[float] = None
+    time_of_day: str = "unknown"  # BMO (Before Market Open), AMC (After Market Close), unknown
+    region: Optional[str] = None
+    sector: Optional[str] = None
+
+class EarningsCalendar(BaseModel):
+    start_date: str
+    end_date: str
+    events: List[EarningsEvent]
+
+# ==================== WEBSOCKET CONNECTION MANAGER ====================
+
+class ConnectionManager:
+    """Manages WebSocket connections for real-time updates"""
+    def __init__(self):
+        self.active_connections: Dict[str, Set[WebSocket]] = {}
+        self.subscriptions: Dict[WebSocket, Set[str]] = {}
+    
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.subscriptions[websocket] = set()
+        logger.info(f"WebSocket connected. Total connections: {len(self.subscriptions)}")
+    
+    def disconnect(self, websocket: WebSocket):
+        symbols = self.subscriptions.get(websocket, set())
+        for symbol in symbols:
+            if symbol in self.active_connections:
+                self.active_connections[symbol].discard(websocket)
+        if websocket in self.subscriptions:
+            del self.subscriptions[websocket]
+        logger.info(f"WebSocket disconnected. Total connections: {len(self.subscriptions)}")
+    
+    def subscribe(self, websocket: WebSocket, symbols: List[str]):
+        for symbol in symbols:
+            if symbol not in self.active_connections:
+                self.active_connections[symbol] = set()
+            self.active_connections[symbol].add(websocket)
+            self.subscriptions[websocket].add(symbol)
+        logger.info(f"Subscribed to {symbols}")
+    
+    def unsubscribe(self, websocket: WebSocket, symbols: List[str]):
+        for symbol in symbols:
+            if symbol in self.active_connections:
+                self.active_connections[symbol].discard(websocket)
+            if websocket in self.subscriptions:
+                self.subscriptions[websocket].discard(symbol)
+    
+    async def broadcast_quote(self, symbol: str, data: dict):
+        if symbol in self.active_connections:
+            dead_connections = []
+            for connection in self.active_connections[symbol]:
+                try:
+                    await connection.send_json(data)
+                except Exception as e:
+                    logger.error(f"Error sending to websocket: {e}")
+                    dead_connections.append(connection)
+            for conn in dead_connections:
+                self.disconnect(conn)
+
+manager = ConnectionManager()
+
 # ==================== TECHNICAL INDICATORS CALCULATION ====================
 
 def calculate_sma(prices: List[float], period: int) -> Optional[float]:
