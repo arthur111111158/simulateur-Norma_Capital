@@ -8,38 +8,49 @@ import { Input } from '../components/ui/input';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Slider } from '../components/ui/slider';
 import { 
   Filter, 
-  Search, 
   TrendingUp, 
   TrendingDown,
   BarChart3,
   RefreshCw,
-  Star
+  Star,
+  Globe,
+  MapPin
 } from 'lucide-react';
 
 const ScreenerPage = () => {
-  const { screenAssets, addToWatchlist, watchlist } = useApp();
+  const { screenAssets, addToWatchlist, watchlist, universe } = useApp();
   const navigate = useNavigate();
   
   const [assetType, setAssetType] = useState('stock');
+  const [region, setRegion] = useState('all');
+  const [sector, setSector] = useState('all');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
     minChange: -100,
     maxChange: 100,
-    sector: 'all',
   });
+
+  // Available sectors
+  const sectors = [
+    'all', 'Technology', 'Financial Services', 'Healthcare', 'Consumer Cyclical',
+    'Consumer Defensive', 'Energy', 'Industrials', 'Basic Materials', 
+    'Communication Services', 'Utilities'
+  ];
 
   // Fetch screener results
   const fetchResults = async () => {
     setLoading(true);
     try {
-      const data = await screenAssets(assetType, {
+      const filterParams = {
         min_change: filters.minChange !== -100 ? filters.minChange : undefined,
         max_change: filters.maxChange !== 100 ? filters.maxChange : undefined,
-      });
+        region: region !== 'all' ? region : undefined,
+        sector: sector !== 'all' ? sector : undefined,
+      };
+      const data = await screenAssets(assetType, filterParams);
       setResults(data || []);
     } catch (error) {
       console.error('Error fetching screener results:', error);
@@ -51,7 +62,7 @@ const ScreenerPage = () => {
   useEffect(() => {
     fetchResults();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [assetType]);
+  }, [assetType, region, sector]);
 
   // Check if in watchlist
   const isInWatchlist = (symbol) => watchlist.some(item => item.symbol === symbol);
@@ -76,6 +87,14 @@ const ScreenerPage = () => {
       : 0
   };
 
+  // Region stats from universe
+  const regionStats = universe ? {
+    us: Object.keys(universe.us || {}).length,
+    europe: Object.keys(universe.europe || {}).length,
+    asia: Object.keys(universe.asia || {}).length,
+    total: universe.total_stocks || 0
+  } : null;
+
   return (
     <div className="space-y-4" data-testid="screener-page">
       {/* Header */}
@@ -87,8 +106,10 @@ const ScreenerPage = () => {
                 <Filter className="w-5 h-5 text-orange-500" />
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-white">Asset Screener</h1>
-                <p className="text-sm text-zinc-500">Filter and discover trading opportunities</p>
+                <h1 className="text-xl font-semibold text-white">Global Asset Screener</h1>
+                <p className="text-sm text-zinc-500">
+                  {regionStats ? `${regionStats.total} stocks across US, Europe & Asia` : 'Filter and discover trading opportunities'}
+                </p>
               </div>
             </div>
             <Button 
@@ -108,13 +129,16 @@ const ScreenerPage = () => {
       {/* Filters */}
       <Card className="nexus-card">
         <CardContent className="p-4">
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center gap-4">
             {/* Asset Type Tabs */}
             <div className="flex-shrink-0">
               <Tabs value={assetType} onValueChange={setAssetType} className="w-auto">
                 <TabsList className="bg-zinc-900">
                   <TabsTrigger value="stock" className="text-xs" data-testid="tab-stock">
                     Stocks
+                  </TabsTrigger>
+                  <TabsTrigger value="index" className="text-xs" data-testid="tab-index">
+                    Indices
                   </TabsTrigger>
                   <TabsTrigger value="commodity" className="text-xs" data-testid="tab-commodity">
                     Commodities
@@ -128,37 +152,88 @@ const ScreenerPage = () => {
 
             <div className="h-8 w-px bg-zinc-800"></div>
 
+            {/* Region Filter - Only for stocks */}
+            {assetType === 'stock' && (
+              <div className="flex-shrink-0">
+                <p className="text-[10px] text-zinc-500 uppercase mb-1">Region</p>
+                <Select value={region} onValueChange={setRegion}>
+                  <SelectTrigger className="w-32 bg-zinc-900 border-zinc-800 text-xs h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Regions</SelectItem>
+                    <SelectItem value="US">
+                      <span className="flex items-center gap-1">
+                        <span>🇺🇸</span> US
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="Europe">
+                      <span className="flex items-center gap-1">
+                        <span>🇪🇺</span> Europe
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="Asia">
+                      <span className="flex items-center gap-1">
+                        <span>🌏</span> Asia
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Sector Filter - Only for stocks */}
+            {assetType === 'stock' && (
+              <div className="flex-shrink-0">
+                <p className="text-[10px] text-zinc-500 uppercase mb-1">Sector</p>
+                <Select value={sector} onValueChange={setSector}>
+                  <SelectTrigger className="w-40 bg-zinc-900 border-zinc-800 text-xs h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sectors.map(s => (
+                      <SelectItem key={s} value={s}>
+                        {s === 'all' ? 'All Sectors' : s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="h-8 w-px bg-zinc-800"></div>
+
             {/* Change Filter */}
-            <div className="flex-1 max-w-sm">
-              <p className="text-[10px] text-zinc-500 uppercase mb-2">Change % Range</p>
-              <div className="flex items-center gap-4">
+            <div className="flex-shrink-0">
+              <p className="text-[10px] text-zinc-500 uppercase mb-1">Change % Range</p>
+              <div className="flex items-center gap-2">
                 <Input
                   type="number"
                   value={filters.minChange}
                   onChange={(e) => setFilters(f => ({ ...f, minChange: parseFloat(e.target.value) || -100 }))}
-                  className="w-20 bg-zinc-900 border-zinc-800 text-xs h-8"
+                  className="w-16 bg-zinc-900 border-zinc-800 text-xs h-8"
                   placeholder="Min"
                 />
-                <span className="text-zinc-500">to</span>
+                <span className="text-zinc-500 text-xs">to</span>
                 <Input
                   type="number"
                   value={filters.maxChange}
                   onChange={(e) => setFilters(f => ({ ...f, maxChange: parseFloat(e.target.value) || 100 }))}
-                  className="w-20 bg-zinc-900 border-zinc-800 text-xs h-8"
+                  className="w-16 bg-zinc-900 border-zinc-800 text-xs h-8"
                   placeholder="Max"
                 />
               </div>
             </div>
 
             {/* Quick Filters */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 ml-auto">
               <Button
                 variant={filters.minChange === 0 ? 'default' : 'outline'}
                 size="sm"
                 className="text-xs"
                 onClick={() => setFilters(f => ({ ...f, minChange: 0, maxChange: 100 }))}
               >
-                <TrendingUp className="w-3 h-3 mr-1" /> Gainers Only
+                <TrendingUp className="w-3 h-3 mr-1" /> Gainers
               </Button>
               <Button
                 variant={filters.maxChange === 0 ? 'default' : 'outline'}
@@ -166,13 +241,17 @@ const ScreenerPage = () => {
                 className="text-xs"
                 onClick={() => setFilters(f => ({ ...f, minChange: -100, maxChange: 0 }))}
               >
-                <TrendingDown className="w-3 h-3 mr-1" /> Losers Only
+                <TrendingDown className="w-3 h-3 mr-1" /> Losers
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 className="text-xs"
-                onClick={() => setFilters({ minChange: -100, maxChange: 100, sector: 'all' })}
+                onClick={() => {
+                  setFilters({ minChange: -100, maxChange: 100 });
+                  setRegion('all');
+                  setSector('all');
+                }}
               >
                 Reset
               </Button>
@@ -187,7 +266,7 @@ const ScreenerPage = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
               <div>
-                <p className="text-[10px] text-zinc-500 uppercase">Total Results</p>
+                <p className="text-[10px] text-zinc-500 uppercase">Results</p>
                 <p className="font-mono text-lg text-white">{stats.total}</p>
               </div>
               <div>
@@ -205,6 +284,12 @@ const ScreenerPage = () => {
                 </p>
               </div>
             </div>
+            {region !== 'all' && (
+              <Badge className="bg-orange-500/20 text-orange-500">
+                <MapPin className="w-3 h-3 mr-1" />
+                {region}
+              </Badge>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -218,13 +303,14 @@ const ScreenerPage = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <ScrollArea className="h-[calc(100vh-450px)]">
+          <ScrollArea className="h-[calc(100vh-480px)]">
             <table className="data-table">
               <thead>
                 <tr>
                   <th className="w-8"></th>
                   <th>Symbol</th>
                   <th>Name</th>
+                  <th>Region</th>
                   <th>Price</th>
                   <th>Change</th>
                   <th>Change %</th>
@@ -235,14 +321,14 @@ const ScreenerPage = () => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="text-center py-8">
+                    <td colSpan={9} className="text-center py-8">
                       <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                      <p className="text-zinc-500 text-sm mt-2">Loading...</p>
+                      <p className="text-zinc-500 text-sm mt-2">Loading global markets...</p>
                     </td>
                   </tr>
                 ) : filteredResults.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="text-center py-8 text-zinc-500">
+                    <td colSpan={9} className="text-center py-8 text-zinc-500">
                       No results found with current filters
                     </td>
                   </tr>
@@ -250,6 +336,13 @@ const ScreenerPage = () => {
                   filteredResults.map((asset, i) => {
                     const isPositive = asset.change_percent >= 0;
                     const inWatchlist = isInWatchlist(asset.symbol);
+                    
+                    // Region flag
+                    const regionFlag = {
+                      'US': '🇺🇸',
+                      'Europe': '🇪🇺',
+                      'Asia': '🌏'
+                    }[asset.region] || '🌐';
                     
                     return (
                       <tr 
@@ -277,10 +370,18 @@ const ScreenerPage = () => {
                           <span className="font-mono text-white font-medium">{asset.symbol}</span>
                         </td>
                         <td>
-                          <span className="text-zinc-400 text-xs truncate max-w-[150px] block">{asset.name}</span>
+                          <span className="text-zinc-400 text-xs truncate max-w-[180px] block">{asset.name}</span>
+                        </td>
+                        <td>
+                          {asset.region && (
+                            <span className="text-xs">
+                              {regionFlag} <span className="text-zinc-500">{asset.region}</span>
+                            </span>
+                          )}
                         </td>
                         <td>
                           <span className="font-mono text-white">{asset.price?.toFixed(2)}</span>
+                          <span className="text-[10px] text-zinc-500 ml-1">{asset.currency}</span>
                         </td>
                         <td>
                           <span className={`font-mono ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
@@ -295,12 +396,12 @@ const ScreenerPage = () => {
                           </Badge>
                         </td>
                         <td>
-                          <span className="font-mono text-zinc-400">
+                          <span className="font-mono text-zinc-400 text-xs">
                             {asset.volume ? (asset.volume / 1e6).toFixed(2) + 'M' : '—'}
                           </span>
                         </td>
                         <td>
-                          <span className="font-mono text-zinc-400">
+                          <span className="font-mono text-zinc-400 text-xs">
                             {asset.market_cap ? '$' + (asset.market_cap / 1e9).toFixed(2) + 'B' : '—'}
                           </span>
                         </td>
