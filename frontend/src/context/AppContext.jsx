@@ -229,6 +229,19 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // ==================== SHAREHOLDERS DATA ====================
+  
+  // Get shareholders data for a company
+  const getShareholders = async (symbol) => {
+    try {
+      const response = await axios.get(`${API}/shareholders/${symbol}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching shareholders:', error);
+      return null;
+    }
+  };
+
   // ==================== NEW: COUNTRY DATA ====================
   
   // Get country data
