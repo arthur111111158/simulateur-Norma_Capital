@@ -575,7 +575,7 @@ const QuotePage = () => {
                 </Card>
               )}
 
-              {/* Shareholders / Major Holders */}
+              {/* Shareholders / Major Holders with Pie Chart */}
               {shareholders && (shareholders.major_holders?.length > 0 || shareholders.institutional_holders?.length > 0) && (
                 <Card className="nexus-card">
                   <CardHeader className="card-header-terminal">
@@ -589,27 +589,119 @@ const QuotePage = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="p-2">
-                    <ScrollArea className="h-[200px]">
-                      {(shareholders.major_holders?.length > 0 ? shareholders.major_holders : shareholders.institutional_holders)?.slice(0, 10).map((holder, i) => (
-                        <div key={i} className="flex items-center justify-between py-2 px-2 hover:bg-zinc-800/30 rounded-sm border-b border-zinc-800/50 last:border-0">
-                          <div className="flex items-center gap-2">
-                            {holder.holder_type === 'family' && <UserCircle className="w-4 h-4 text-purple-400" />}
-                            {holder.holder_type === 'government' && <Landmark className="w-4 h-4 text-blue-400" />}
-                            {holder.holder_type === 'institutional' && <Building2 className="w-4 h-4 text-amber-400" />}
-                            {holder.holder_type === 'corporate' && <Building2 className="w-4 h-4 text-green-400" />}
-                            {holder.holder_type === 'mutual_fund' && <BarChart2 className="w-4 h-4 text-cyan-400" />}
-                            <div>
-                              <span className="text-sm text-white">{holder.name}</span>
-                              {holder.country && <p className="text-[10px] text-zinc-500">{holder.country}</p>}
+                    <div className="flex gap-4">
+                      {/* Pie Chart */}
+                      <div className="w-[180px] h-[180px] flex-shrink-0">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={(() => {
+                                const holders = shareholders.major_holders?.length > 0 
+                                  ? shareholders.major_holders 
+                                  : shareholders.institutional_holders;
+                                const topHolders = holders?.slice(0, 5) || [];
+                                const topTotal = topHolders.reduce((sum, h) => sum + (h.percent_held || 0), 0);
+                                const othersPercent = Math.max(0, 100 - topTotal);
+                                
+                                const data = topHolders.map((h, i) => ({
+                                  name: h.name?.split(' ')[0] || `Holder ${i+1}`,
+                                  value: h.percent_held || 0,
+                                  type: h.holder_type
+                                }));
+                                
+                                if (othersPercent > 0) {
+                                  data.push({ name: 'Others/Float', value: othersPercent, type: 'other' });
+                                }
+                                return data;
+                              })()}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={35}
+                              outerRadius={70}
+                              paddingAngle={2}
+                              dataKey="value"
+                            >
+                              {(() => {
+                                const COLORS = {
+                                  family: '#a855f7',      // Purple
+                                  government: '#3b82f6',  // Blue
+                                  institutional: '#f59e0b', // Amber
+                                  corporate: '#22c55e',   // Green
+                                  mutual_fund: '#06b6d4', // Cyan
+                                  insider: '#ec4899',     // Pink
+                                  other: '#71717a'        // Gray
+                                };
+                                const holders = shareholders.major_holders?.length > 0 
+                                  ? shareholders.major_holders 
+                                  : shareholders.institutional_holders;
+                                const topHolders = holders?.slice(0, 5) || [];
+                                const topTotal = topHolders.reduce((sum, h) => sum + (h.percent_held || 0), 0);
+                                const hasOthers = (100 - topTotal) > 0;
+                                
+                                return [...topHolders, ...(hasOthers ? [{ holder_type: 'other' }] : [])].map((h, i) => (
+                                  <Cell key={i} fill={COLORS[h.holder_type] || COLORS.institutional} />
+                                ));
+                              })()}
+                            </Pie>
+                            <Tooltip 
+                              formatter={(value) => [`${value.toFixed(1)}%`, '']}
+                              contentStyle={{ 
+                                backgroundColor: '#18181b', 
+                                border: '1px solid #3f3f46',
+                                borderRadius: '4px',
+                                fontSize: '11px'
+                              }}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      
+                      {/* Holders List */}
+                      <ScrollArea className="flex-1 h-[180px]">
+                        {(shareholders.major_holders?.length > 0 ? shareholders.major_holders : shareholders.institutional_holders)?.slice(0, 8).map((holder, i) => (
+                          <div key={i} className="flex items-center justify-between py-1.5 px-2 hover:bg-zinc-800/30 rounded-sm border-b border-zinc-800/50 last:border-0">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full ${
+                                holder.holder_type === 'family' ? 'bg-purple-400' :
+                                holder.holder_type === 'government' ? 'bg-blue-400' :
+                                holder.holder_type === 'corporate' ? 'bg-green-400' :
+                                holder.holder_type === 'insider' ? 'bg-pink-400' :
+                                'bg-amber-400'
+                              }`} />
+                              <div>
+                                <span className="text-xs text-white">{holder.name?.length > 25 ? holder.name.substring(0, 25) + '...' : holder.name}</span>
+                                {holder.country && <p className="text-[9px] text-zinc-500">{holder.country}</p>}
+                              </div>
                             </div>
+                            <span className="text-xs font-mono text-amber-400">{holder.percent_held?.toFixed(1)}%</span>
                           </div>
-                          <div className="text-right">
-                            <span className="text-sm font-mono text-amber-400">{holder.percent_held?.toFixed(2)}%</span>
-                            <p className="text-[10px] text-zinc-500 capitalize">{holder.holder_type?.replace('_', ' ')}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </ScrollArea>
+                        ))}
+                      </ScrollArea>
+                    </div>
+                    
+                    {/* Legend */}
+                    <div className="flex flex-wrap gap-3 mt-3 pt-2 border-t border-zinc-800">
+                      <div className="flex items-center gap-1.5 text-[10px]">
+                        <div className="w-2 h-2 rounded-full bg-purple-400" />
+                        <span className="text-zinc-400">Family</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px]">
+                        <div className="w-2 h-2 rounded-full bg-blue-400" />
+                        <span className="text-zinc-400">Government</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px]">
+                        <div className="w-2 h-2 rounded-full bg-amber-400" />
+                        <span className="text-zinc-400">Institutional</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px]">
+                        <div className="w-2 h-2 rounded-full bg-green-400" />
+                        <span className="text-zinc-400">Corporate</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px]">
+                        <div className="w-2 h-2 rounded-full bg-zinc-400" />
+                        <span className="text-zinc-400">Float/Others</span>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               )}
