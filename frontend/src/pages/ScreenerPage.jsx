@@ -35,16 +35,22 @@ const ScreenerPage = () => {
   // Fetch screener results
   const fetchResults = async () => {
     setLoading(true);
-    const data = await screenAssets(assetType, {
-      min_change: filters.minChange !== -100 ? filters.minChange : undefined,
-      max_change: filters.maxChange !== 100 ? filters.maxChange : undefined,
-    });
-    setResults(data);
+    try {
+      const data = await screenAssets(assetType, {
+        min_change: filters.minChange !== -100 ? filters.minChange : undefined,
+        max_change: filters.maxChange !== 100 ? filters.maxChange : undefined,
+      });
+      setResults(data || []);
+    } catch (error) {
+      console.error('Error fetching screener results:', error);
+      setResults([]);
+    }
     setLoading(false);
   };
 
   useEffect(() => {
     fetchResults();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assetType]);
 
   // Check if in watchlist
