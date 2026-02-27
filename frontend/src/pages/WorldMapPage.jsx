@@ -18,6 +18,7 @@ import {
   Globe, 
   AlertTriangle, 
   TrendingDown,
+  TrendingUp,
   Flame,
   Shield,
   Ship,
@@ -26,10 +27,37 @@ import {
   X,
   ChevronRight,
   MapPin,
-  Route
+  Route,
+  Users,
+  DollarSign,
+  Building2,
+  Flag,
+  Loader2
 } from 'lucide-react';
 
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+
+// Country ISO code mapping from geo properties
+const GEO_NAME_TO_ISO = {
+  "United States of America": "US", "United States": "US",
+  "United Kingdom": "GB", "France": "FR", "Germany": "DE",
+  "Italy": "IT", "Spain": "ES", "Portugal": "PT", "Netherlands": "NL",
+  "Belgium": "BE", "Switzerland": "CH", "Austria": "AT", "Poland": "PL",
+  "Sweden": "SE", "Norway": "NO", "Denmark": "DK", "Finland": "FI",
+  "Ireland": "IE", "Greece": "GR", "Czech Republic": "CZ", "Czechia": "CZ",
+  "Romania": "RO", "Hungary": "HU", "Ukraine": "UA", "Russia": "RU",
+  "China": "CN", "Japan": "JP", "South Korea": "KR", "North Korea": "KP",
+  "India": "IN", "Pakistan": "PK", "Bangladesh": "BD", "Indonesia": "ID",
+  "Malaysia": "MY", "Thailand": "TH", "Vietnam": "VN", "Philippines": "PH",
+  "Singapore": "SG", "Australia": "AU", "New Zealand": "NZ",
+  "Brazil": "BR", "Argentina": "AR", "Mexico": "MX", "Canada": "CA",
+  "Colombia": "CO", "Chile": "CL", "Peru": "PE", "Venezuela": "VE",
+  "Egypt": "EG", "South Africa": "ZA", "Nigeria": "NG", "Kenya": "KE",
+  "Morocco": "MA", "Algeria": "DZ", "Tunisia": "TN", "Ethiopia": "ET",
+  "Saudi Arabia": "SA", "United Arab Emirates": "AE", "Israel": "IL",
+  "Turkey": "TR", "Iran": "IR", "Iraq": "IQ", "Syria": "SY",
+  "Taiwan": "TW", "Hong Kong": "HK",
+};
 
 // Country coordinates for conflict markers
 const countryCoordinates = {
@@ -46,7 +74,7 @@ const countryCoordinates = {
 };
 
 const WorldMapPage = () => {
-  const { conflicts, getShippingRoutes, getShippingPorts, getShippingStats } = useApp();
+  const { conflicts, getShippingRoutes, getShippingPorts, getShippingStats, getCountryData } = useApp();
   const navigate = useNavigate();
   const [selectedConflict, setSelectedConflict] = useState(null);
   const [hoveredConflict, setHoveredConflict] = useState(null);
@@ -56,10 +84,16 @@ const WorldMapPage = () => {
   const [shippingRoutes, setShippingRoutes] = useState([]);
   const [shippingPorts, setShippingPorts] = useState({ seaports: [], airports: [] });
   const [shippingStats, setShippingStats] = useState(null);
-  const [activeLayer, setActiveLayer] = useState('all'); // all, maritime, air, conflicts
+  const [activeLayer, setActiveLayer] = useState('all');
   const [showPorts, setShowPorts] = useState(true);
   const [hoveredRoute, setHoveredRoute] = useState(null);
   const [selectedRoute, setSelectedRoute] = useState(null);
+  
+  // Country state
+  const [selectedCountry, setSelectedCountry] = useState(null);
+  const [countryData, setCountryData] = useState(null);
+  const [loadingCountry, setLoadingCountry] = useState(false);
+  const [hoveredCountry, setHoveredCountry] = useState(null);
 
   // Load shipping data
   useEffect(() => {
@@ -75,6 +109,34 @@ const WorldMapPage = () => {
     };
     loadShippingData();
   }, [getShippingRoutes, getShippingPorts, getShippingStats]);
+
+  // Load country data when selected
+  useEffect(() => {
+    const loadCountryData = async () => {
+      if (!selectedCountry) {
+        setCountryData(null);
+        return;
+      }
+      
+      setLoadingCountry(true);
+      const data = await getCountryData(selectedCountry.iso);
+      setCountryData(data);
+      setLoadingCountry(false);
+    };
+    loadCountryData();
+  }, [selectedCountry, getCountryData]);
+
+  // Handle country click
+  const handleCountryClick = (geo) => {
+    const countryName = geo.properties.name;
+    const iso = GEO_NAME_TO_ISO[countryName] || countryName.substring(0, 2).toUpperCase();
+    
+    // Clear other selections
+    setSelectedConflict(null);
+    setSelectedRoute(null);
+    
+    setSelectedCountry({ name: countryName, iso });
+  };
 
   // Get marker icon based on event type
   const getEventIcon = (eventType) => {
@@ -97,10 +159,10 @@ const WorldMapPage = () => {
 
   // Get disruption color for routes
   const getDisruptionColor = (level, routeType) => {
-    if (level > 0.5) return '#ef4444'; // High disruption - red
-    if (level > 0.2) return '#f97316'; // Medium - orange
-    if (level > 0) return '#eab308'; // Low - yellow
-    return routeType === 'maritime' ? '#3b82f6' : '#8b5cf6'; // Normal - blue for maritime, purple for air
+    if (level > 0.5) return '#ef4444';
+    if (level > 0.2) return '#f97316';
+    if (level > 0) return '#eab308';
+    return routeType === 'maritime' ? '#3b82f6' : '#8b5cf6';
   };
 
   // Get severity badge class
@@ -148,6 +210,39 @@ const WorldMapPage = () => {
     return `${volume} ${unit}`;
   };
 
+  // Format large numbers
+  const formatNumber = (num, decimals = 0) => {
+    if (num === null || num === undefined) return '—';
+    if (num >= 1e12) return `$${(num / 1e12).toFixed(2)}T`;
+    if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
+    if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
+    if (num >= 1e3) return `${(num / 1e3).toFixed(decimals)}K`;
+    return num.toLocaleString(undefined, { maximumFractionDigits: decimals });
+  };
+
+  // Format percentage
+  const formatPercent = (num) => {
+    if (num === null || num === undefined) return '—';
+    return `${num.toFixed(1)}%`;
+  };
+
+  // Format population
+  const formatPopulation = (num) => {
+    if (num === null || num === undefined) return '—';
+    if (num >= 1e9) return `${(num / 1e9).toFixed(2)}B`;
+    if (num >= 1e6) return `${(num / 1e6).toFixed(1)}M`;
+    if (num >= 1e3) return `${(num / 1e3).toFixed(0)}K`;
+    return num.toLocaleString();
+  };
+
+  // Clear all selections
+  const clearSelection = () => {
+    setSelectedCountry(null);
+    setCountryData(null);
+    setSelectedConflict(null);
+    setSelectedRoute(null);
+  };
+
   return (
     <div className="space-y-4" data-testid="worldmap-page">
       {/* Header */}
@@ -160,7 +255,7 @@ const WorldMapPage = () => {
               </div>
               <div>
                 <h1 className="text-xl font-semibold text-white">Global Trade & Risk Map</h1>
-                <p className="text-sm text-zinc-500">Shipping routes, conflicts & supply chain disruptions</p>
+                <p className="text-sm text-zinc-500">Click on any country to view economic & demographic data</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
@@ -292,20 +387,30 @@ const WorldMapPage = () => {
                   <ZoomableGroup zoom={zoom} onMoveEnd={({ zoom: z }) => setZoom(z)}>
                     <Geographies geography={geoUrl}>
                       {({ geographies }) =>
-                        geographies.map((geo) => (
-                          <Geography
-                            key={geo.rsmKey}
-                            geography={geo}
-                            fill="#27272a"
-                            stroke="#3f3f46"
-                            strokeWidth={0.5}
-                            style={{
-                              default: { outline: 'none' },
-                              hover: { fill: '#3f3f46', outline: 'none' },
-                              pressed: { outline: 'none' }
-                            }}
-                          />
-                        ))
+                        geographies.map((geo) => {
+                          const countryName = geo.properties.name;
+                          const isSelected = selectedCountry?.name === countryName;
+                          const isHovered = hoveredCountry === countryName;
+                          
+                          return (
+                            <Geography
+                              key={geo.rsmKey}
+                              geography={geo}
+                              fill={isSelected ? "#f97316" : isHovered ? "#3f3f46" : "#27272a"}
+                              stroke={isSelected ? "#fb923c" : "#3f3f46"}
+                              strokeWidth={isSelected ? 1.5 : 0.5}
+                              style={{
+                                default: { outline: 'none', cursor: 'pointer' },
+                                hover: { fill: '#3f3f46', outline: 'none', cursor: 'pointer' },
+                                pressed: { outline: 'none' }
+                              }}
+                              onClick={() => handleCountryClick(geo)}
+                              onMouseEnter={() => setHoveredCountry(countryName)}
+                              onMouseLeave={() => setHoveredCountry(null)}
+                              data-testid={`country-${countryName?.replace(/\s+/g, '-')}`}
+                            />
+                          );
+                        })
                       }
                     </Geographies>
 
@@ -332,7 +437,10 @@ const WorldMapPage = () => {
                           }}
                           onMouseEnter={() => setHoveredRoute(route)}
                           onMouseLeave={() => setHoveredRoute(null)}
-                          onClick={() => setSelectedRoute(route)}
+                          onClick={() => {
+                            clearSelection();
+                            setSelectedRoute(route);
+                          }}
                         />
                       );
                     })}
@@ -384,7 +492,10 @@ const WorldMapPage = () => {
                         <Marker
                           key={conflict.id || i}
                           coordinates={conflict.coordinates}
-                          onClick={() => setSelectedConflict(conflict)}
+                          onClick={() => {
+                            clearSelection();
+                            setSelectedConflict(conflict);
+                          }}
                           onMouseEnter={() => setHoveredConflict(conflict)}
                           onMouseLeave={() => setHoveredConflict(null)}
                         >
@@ -427,6 +538,14 @@ const WorldMapPage = () => {
                   </ZoomableGroup>
                 </ComposableMap>
 
+                {/* Country Hover Tooltip */}
+                {hoveredCountry && !selectedCountry && !hoveredRoute && !hoveredConflict && (
+                  <div className="absolute top-4 left-4 bg-zinc-900/95 border border-zinc-700 rounded-sm p-3 z-10">
+                    <p className="text-sm text-white font-medium">{hoveredCountry}</p>
+                    <p className="text-[10px] text-zinc-400 mt-1">Click for details</p>
+                  </div>
+                )}
+
                 {/* Route Hover Tooltip */}
                 {hoveredRoute && !selectedRoute && (
                   <div className="absolute top-4 left-4 bg-zinc-900/95 border border-zinc-700 rounded-sm p-3 max-w-xs z-10">
@@ -463,9 +582,6 @@ const WorldMapPage = () => {
                       <Badge className={`${getSeverityBadgeClass(hoveredConflict.severity)} rounded-none text-[10px]`}>
                         Severity: {hoveredConflict.severity}/10
                       </Badge>
-                      <span className="text-xs text-zinc-400">
-                        Impact: {hoveredConflict.impact_score?.toFixed(0)}
-                      </span>
                     </div>
                   </div>
                 )}
@@ -527,8 +643,240 @@ const WorldMapPage = () => {
 
         {/* Sidebar */}
         <div className="col-span-4 space-y-4">
+          {/* Country Data Panel */}
+          {selectedCountry && (
+            <Card className="nexus-card border-emerald-500/50" data-testid="country-data-panel">
+              <CardHeader className="card-header-terminal">
+                <CardTitle className="card-header-title flex items-center gap-2">
+                  <Flag className="w-4 h-4 text-emerald-500" />
+                  {selectedCountry.name}
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={clearSelection}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </CardHeader>
+              <CardContent className="p-4">
+                {loadingCountry ? (
+                  <div className="flex items-center justify-center h-48">
+                    <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
+                  </div>
+                ) : countryData ? (
+                  <ScrollArea className="h-[500px] pr-2">
+                    <div className="space-y-4">
+                      {/* Basic Info */}
+                      <div className="flex items-start gap-3">
+                        {countryData.basic.flag_url && (
+                          <img 
+                            src={countryData.basic.flag_url} 
+                            alt={`${countryData.basic.name} flag`}
+                            className="w-16 h-10 object-cover border border-zinc-700"
+                          />
+                        )}
+                        <div>
+                          <h3 className="text-lg font-medium text-white">{countryData.basic.name}</h3>
+                          <p className="text-xs text-zinc-400">{countryData.basic.official_name}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge className="bg-zinc-700 text-zinc-300 rounded-none text-[10px]">
+                              {countryData.basic.region}
+                            </Badge>
+                            {countryData.basic.subregion && (
+                              <Badge className="bg-zinc-800 text-zinc-400 rounded-none text-[10px]">
+                                {countryData.basic.subregion}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Quick Stats */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="p-2 bg-zinc-900 rounded-sm">
+                          <p className="text-[10px] text-zinc-500">Capital</p>
+                          <p className="text-sm text-white">{countryData.basic.capital || '—'}</p>
+                        </div>
+                        <div className="p-2 bg-zinc-900 rounded-sm">
+                          <p className="text-[10px] text-zinc-500">Currency</p>
+                          <p className="text-sm text-white">{countryData.economic.currency_code || '—'}</p>
+                        </div>
+                      </div>
+
+                      {/* Economic Data */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <DollarSign className="w-4 h-4 text-emerald-500" />
+                          <p className="text-xs text-zinc-500 uppercase font-medium">Economic Indicators</p>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center py-1.5 border-b border-zinc-800/50">
+                            <span className="text-sm text-zinc-400">GDP</span>
+                            <span className="font-mono text-sm text-white">{formatNumber(countryData.economic.gdp)}</span>
+                          </div>
+                          <div className="flex justify-between items-center py-1.5 border-b border-zinc-800/50">
+                            <span className="text-sm text-zinc-400">GDP per Capita</span>
+                            <span className="font-mono text-sm text-white">{formatNumber(countryData.economic.gdp_per_capita)}</span>
+                          </div>
+                          <div className="flex justify-between items-center py-1.5 border-b border-zinc-800/50">
+                            <span className="text-sm text-zinc-400">GDP Growth</span>
+                            <span className={`font-mono text-sm ${countryData.economic.gdp_growth > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                              {formatPercent(countryData.economic.gdp_growth)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center py-1.5 border-b border-zinc-800/50">
+                            <span className="text-sm text-zinc-400">Inflation</span>
+                            <span className={`font-mono text-sm ${countryData.economic.inflation > 5 ? 'text-red-500' : 'text-white'}`}>
+                              {formatPercent(countryData.economic.inflation)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center py-1.5 border-b border-zinc-800/50">
+                            <span className="text-sm text-zinc-400">Unemployment</span>
+                            <span className={`font-mono text-sm ${countryData.economic.unemployment > 10 ? 'text-red-500' : 'text-white'}`}>
+                              {formatPercent(countryData.economic.unemployment)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center py-1.5 border-b border-zinc-800/50">
+                            <span className="text-sm text-zinc-400">Exports</span>
+                            <span className="font-mono text-sm text-emerald-500">{formatNumber(countryData.economic.exports)}</span>
+                          </div>
+                          <div className="flex justify-between items-center py-1.5 border-b border-zinc-800/50">
+                            <span className="text-sm text-zinc-400">Imports</span>
+                            <span className="font-mono text-sm text-orange-500">{formatNumber(countryData.economic.imports)}</span>
+                          </div>
+                          {countryData.economic.trade_balance !== null && (
+                            <div className="flex justify-between items-center py-1.5 border-b border-zinc-800/50">
+                              <span className="text-sm text-zinc-400">Trade Balance</span>
+                              <span className={`font-mono text-sm ${countryData.economic.trade_balance > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                {formatNumber(countryData.economic.trade_balance)}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex justify-between items-center py-1.5 border-b border-zinc-800/50">
+                            <span className="text-sm text-zinc-400">FDI Inflow</span>
+                            <span className="font-mono text-sm text-blue-400">{formatNumber(countryData.economic.fdi_inflow)}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Demographic Data */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Users className="w-4 h-4 text-blue-500" />
+                          <p className="text-xs text-zinc-500 uppercase font-medium">Demographics</p>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center py-1.5 border-b border-zinc-800/50">
+                            <span className="text-sm text-zinc-400">Population</span>
+                            <span className="font-mono text-sm text-white">{formatPopulation(countryData.demographic.population)}</span>
+                          </div>
+                          <div className="flex justify-between items-center py-1.5 border-b border-zinc-800/50">
+                            <span className="text-sm text-zinc-400">Pop. Growth</span>
+                            <span className={`font-mono text-sm ${countryData.demographic.population_growth > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                              {formatPercent(countryData.demographic.population_growth)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center py-1.5 border-b border-zinc-800/50">
+                            <span className="text-sm text-zinc-400">Density</span>
+                            <span className="font-mono text-sm text-white">
+                              {countryData.demographic.population_density ? `${countryData.demographic.population_density.toFixed(1)}/km²` : '—'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center py-1.5 border-b border-zinc-800/50">
+                            <span className="text-sm text-zinc-400">Life Expectancy</span>
+                            <span className="font-mono text-sm text-white">
+                              {countryData.demographic.life_expectancy ? `${countryData.demographic.life_expectancy.toFixed(1)} yrs` : '—'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center py-1.5 border-b border-zinc-800/50">
+                            <span className="text-sm text-zinc-400">Urban Population</span>
+                            <span className="font-mono text-sm text-white">{formatPercent(countryData.demographic.urban_population_percent)}</span>
+                          </div>
+                          <div className="flex justify-between items-center py-1.5 border-b border-zinc-800/50">
+                            <span className="text-sm text-zinc-400">Fertility Rate</span>
+                            <span className="font-mono text-sm text-white">
+                              {countryData.demographic.fertility_rate ? `${countryData.demographic.fertility_rate.toFixed(2)}` : '—'}
+                            </span>
+                          </div>
+                          {countryData.demographic.hdi && (
+                            <div className="flex justify-between items-center py-1.5 border-b border-zinc-800/50">
+                              <span className="text-sm text-zinc-400">HDI</span>
+                              <span className={`font-mono text-sm ${countryData.demographic.hdi > 0.8 ? 'text-emerald-500' : countryData.demographic.hdi > 0.6 ? 'text-yellow-500' : 'text-red-500'}`}>
+                                {countryData.demographic.hdi.toFixed(3)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Additional Info */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Building2 className="w-4 h-4 text-violet-500" />
+                          <p className="text-xs text-zinc-500 uppercase font-medium">Additional Info</p>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="py-1.5 border-b border-zinc-800/50">
+                            <span className="text-sm text-zinc-400">Languages</span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {countryData.basic.languages?.map((lang, i) => (
+                                <Badge key={i} variant="outline" className="text-[10px] rounded-none">
+                                  {lang}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="py-1.5 border-b border-zinc-800/50">
+                            <span className="text-sm text-zinc-400">Area</span>
+                            <p className="font-mono text-sm text-white mt-1">
+                              {countryData.basic.area ? `${countryData.basic.area.toLocaleString()} km²` : '—'}
+                            </p>
+                          </div>
+                          {countryData.basic.borders?.length > 0 && (
+                            <div className="py-1.5 border-b border-zinc-800/50">
+                              <span className="text-sm text-zinc-400">Borders</span>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {countryData.basic.borders.map((border, i) => (
+                                  <Badge key={i} variant="outline" className="text-[10px] rounded-none text-zinc-400">
+                                    {border}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Risk Factors */}
+                      {countryData.risk_factors?.length > 0 && (
+                        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-sm">
+                          <div className="flex items-center gap-2 mb-2">
+                            <AlertTriangle className="w-4 h-4 text-red-500" />
+                            <p className="text-xs text-red-400 uppercase font-medium">Risk Factors</p>
+                          </div>
+                          <div className="space-y-1">
+                            {countryData.risk_factors.map((risk, i) => (
+                              <p key={i} className="text-xs text-red-300">{risk}</p>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-48 text-zinc-500">
+                    <Globe className="w-12 h-12 mb-4 opacity-50" />
+                    <p>No data available</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Selected Route Detail */}
-          {selectedRoute ? (
+          {selectedRoute && !selectedCountry && (
             <Card className="nexus-card border-blue-500/50">
               <CardHeader className="card-header-terminal">
                 <CardTitle className="card-header-title flex items-center gap-2">
@@ -543,7 +891,7 @@ const WorldMapPage = () => {
                   variant="ghost"
                   size="sm"
                   className="h-6 w-6 p-0"
-                  onClick={() => setSelectedRoute(null)}
+                  onClick={clearSelection}
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -616,7 +964,10 @@ const WorldMapPage = () => {
                 </div>
               </CardContent>
             </Card>
-          ) : selectedConflict ? (
+          )}
+
+          {/* Selected Conflict Detail */}
+          {selectedConflict && !selectedCountry && !selectedRoute && (
             <Card className="nexus-card border-orange-500/50">
               <CardHeader className="card-header-terminal">
                 <CardTitle className="card-header-title">Event Details</CardTitle>
@@ -624,7 +975,7 @@ const WorldMapPage = () => {
                   variant="ghost"
                   size="sm"
                   className="h-6 w-6 p-0"
-                  onClick={() => setSelectedConflict(null)}
+                  onClick={clearSelection}
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -675,128 +1026,132 @@ const WorldMapPage = () => {
                 </div>
               </CardContent>
             </Card>
-          ) : (
-            /* Routes List */
-            <Card className="nexus-card">
-              <CardHeader className="card-header-terminal">
-                <CardTitle className="card-header-title flex items-center gap-2">
-                  <Route className="w-4 h-4 text-blue-500" />
-                  {activeLayer === 'conflicts' ? 'Active Events' : 'Shipping Routes'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <ScrollArea className="h-[400px]">
-                  {activeLayer === 'conflicts' ? (
-                    conflicts.map((conflict, i) => {
-                      const Icon = getEventIcon(conflict.event_type);
-                      return (
-                        <div
-                          key={conflict.id || i}
-                          className="p-3 border-b border-zinc-800/50 hover:bg-zinc-800/30 cursor-pointer"
-                          onClick={() => setSelectedConflict(conflict)}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div 
-                              className="w-8 h-8 rounded-sm flex items-center justify-center flex-shrink-0"
-                              style={{ backgroundColor: `${getSeverityColor(conflict.severity)}20` }}
-                            >
-                              <Icon className="w-4 h-4" style={{ color: getSeverityColor(conflict.severity) }} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="text-sm text-white">{conflict.title}</h4>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-[10px] text-zinc-500">{conflict.country}</span>
-                                <Badge className={`${getSeverityBadgeClass(conflict.severity)} rounded-none text-[9px]`}>
-                                  {conflict.severity}/10
-                                </Badge>
+          )}
+
+          {/* Default: Routes List or Risk Summary */}
+          {!selectedCountry && !selectedRoute && !selectedConflict && (
+            <>
+              <Card className="nexus-card">
+                <CardHeader className="card-header-terminal">
+                  <CardTitle className="card-header-title flex items-center gap-2">
+                    <Route className="w-4 h-4 text-blue-500" />
+                    {activeLayer === 'conflicts' ? 'Active Events' : 'Shipping Routes'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <ScrollArea className="h-[320px]">
+                    {activeLayer === 'conflicts' ? (
+                      conflicts.map((conflict, i) => {
+                        const Icon = getEventIcon(conflict.event_type);
+                        return (
+                          <div
+                            key={conflict.id || i}
+                            className="p-3 border-b border-zinc-800/50 hover:bg-zinc-800/30 cursor-pointer"
+                            onClick={() => setSelectedConflict(conflict)}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div 
+                                className="w-8 h-8 rounded-sm flex items-center justify-center flex-shrink-0"
+                                style={{ backgroundColor: `${getSeverityColor(conflict.severity)}20` }}
+                              >
+                                <Icon className="w-4 h-4" style={{ color: getSeverityColor(conflict.severity) }} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-sm text-white">{conflict.title}</h4>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-[10px] text-zinc-500">{conflict.country}</span>
+                                  <Badge className={`${getSeverityBadgeClass(conflict.severity)} rounded-none text-[9px]`}>
+                                    {conflict.severity}/10
+                                  </Badge>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    filteredRoutes.map((route, i) => (
-                      <div
-                        key={route.id}
-                        className="p-3 border-b border-zinc-800/50 hover:bg-zinc-800/30 cursor-pointer"
-                        onClick={() => setSelectedRoute(route)}
-                        data-testid={`route-item-${route.id}`}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className={`w-8 h-8 rounded-sm flex items-center justify-center flex-shrink-0 ${route.route_type === 'maritime' ? 'bg-blue-500/20' : 'bg-purple-500/20'}`}>
-                            {route.route_type === 'maritime' ? (
-                              <Ship className="w-4 h-4 text-blue-500" />
-                            ) : (
-                              <Plane className="w-4 h-4 text-purple-500" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-sm text-white">{route.name}</h4>
-                            <p className="text-[10px] text-zinc-500">{route.origin.name} → {route.destination.name}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-[10px] text-zinc-400">{formatVolume(route.annual_volume, route.volume_unit)}/yr</span>
-                              {route.disruption_level > 0 && (
-                                <Badge className="bg-red-500/20 text-red-400 rounded-none text-[9px]">
-                                  {(route.disruption_level * 100).toFixed(0)}% Risk
-                                </Badge>
+                        );
+                      })
+                    ) : (
+                      filteredRoutes.slice(0, 8).map((route, i) => (
+                        <div
+                          key={route.id}
+                          className="p-3 border-b border-zinc-800/50 hover:bg-zinc-800/30 cursor-pointer"
+                          onClick={() => setSelectedRoute(route)}
+                          data-testid={`route-item-${route.id}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`w-8 h-8 rounded-sm flex items-center justify-center flex-shrink-0 ${route.route_type === 'maritime' ? 'bg-blue-500/20' : 'bg-purple-500/20'}`}>
+                              {route.route_type === 'maritime' ? (
+                                <Ship className="w-4 h-4 text-blue-500" />
+                              ) : (
+                                <Plane className="w-4 h-4 text-purple-500" />
                               )}
                             </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm text-white">{route.name}</h4>
+                              <p className="text-[10px] text-zinc-500">{route.origin.name} → {route.destination.name}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[10px] text-zinc-400">{formatVolume(route.annual_volume, route.volume_unit)}/yr</span>
+                                {route.disruption_level > 0 && (
+                                  <Badge className="bg-red-500/20 text-red-400 rounded-none text-[9px]">
+                                    {(route.disruption_level * 100).toFixed(0)}% Risk
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-zinc-600 flex-shrink-0" />
                           </div>
-                          <ChevronRight className="w-4 h-4 text-zinc-600 flex-shrink-0" />
                         </div>
-                      </div>
-                    ))
-                  )}
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          )}
+                      ))
+                    )}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
 
-          {/* Risk Summary */}
-          {shippingStats?.risk_summary && (
-            <Card className="nexus-card">
-              <CardHeader className="card-header-terminal">
-                <CardTitle className="card-header-title flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-orange-500" />
-                  Risk Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-3">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between py-1.5">
-                    <span className="text-sm text-zinc-400">High Risk Routes</span>
-                    <Badge className="bg-red-500/20 text-red-500 rounded-none">
-                      {shippingStats.risk_summary.high_risk_routes}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between py-1.5">
-                    <span className="text-sm text-zinc-400">Medium Risk Routes</span>
-                    <Badge className="bg-orange-500/20 text-orange-500 rounded-none">
-                      {shippingStats.risk_summary.medium_risk_routes}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between py-1.5">
-                    <span className="text-sm text-zinc-400">Low Risk Routes</span>
-                    <Badge className="bg-yellow-500/20 text-yellow-500 rounded-none">
-                      {shippingStats.risk_summary.low_risk_routes}
-                    </Badge>
-                  </div>
-                  {shippingStats.risk_summary.critical_chokepoints?.length > 0 && (
-                    <div className="pt-2 border-t border-zinc-800">
-                      <p className="text-xs text-zinc-500 uppercase mb-2">Critical Chokepoints</p>
-                      <div className="flex flex-wrap gap-1">
-                        {shippingStats.risk_summary.critical_chokepoints.map((cp, i) => (
-                          <Badge key={i} className="bg-red-500/20 text-red-400 rounded-none text-[10px]">
-                            {cp}
-                          </Badge>
-                        ))}
+              {/* Risk Summary */}
+              {shippingStats?.risk_summary && (
+                <Card className="nexus-card">
+                  <CardHeader className="card-header-terminal">
+                    <CardTitle className="card-header-title flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-orange-500" />
+                      Risk Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-3">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between py-1.5">
+                        <span className="text-sm text-zinc-400">High Risk Routes</span>
+                        <Badge className="bg-red-500/20 text-red-500 rounded-none">
+                          {shippingStats.risk_summary.high_risk_routes}
+                        </Badge>
                       </div>
+                      <div className="flex items-center justify-between py-1.5">
+                        <span className="text-sm text-zinc-400">Medium Risk Routes</span>
+                        <Badge className="bg-orange-500/20 text-orange-500 rounded-none">
+                          {shippingStats.risk_summary.medium_risk_routes}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between py-1.5">
+                        <span className="text-sm text-zinc-400">Low Risk Routes</span>
+                        <Badge className="bg-yellow-500/20 text-yellow-500 rounded-none">
+                          {shippingStats.risk_summary.low_risk_routes}
+                        </Badge>
+                      </div>
+                      {shippingStats.risk_summary.critical_chokepoints?.length > 0 && (
+                        <div className="pt-2 border-t border-zinc-800">
+                          <p className="text-xs text-zinc-500 uppercase mb-2">Critical Chokepoints</p>
+                          <div className="flex flex-wrap gap-1">
+                            {shippingStats.risk_summary.critical_chokepoints.map((cp, i) => (
+                              <Badge key={i} className="bg-red-500/20 text-red-400 rounded-none text-[10px]">
+                                {cp}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              )}
+            </>
           )}
         </div>
       </div>
