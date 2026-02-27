@@ -229,6 +229,41 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // ==================== NEW: COUNTRY DATA ====================
+  
+  // Get country data
+  const getCountryData = async (countryCode) => {
+    try {
+      const response = await axios.get(`${API}/country/${countryCode}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching country data:', error);
+      return null;
+    }
+  };
+
+  // Search countries
+  const searchCountries = async (query) => {
+    try {
+      const response = await axios.get(`${API}/country/search/${query}`);
+      return response.data.results || [];
+    } catch (error) {
+      console.error('Error searching countries:', error);
+      return [];
+    }
+  };
+
+  // Get all countries list
+  const getCountriesList = async () => {
+    try {
+      const response = await axios.get(`${API}/countries/list`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching countries list:', error);
+      return { countries: [], total: 0 };
+    }
+  };
+
   // ==================== NEW: OPTIONS CHAIN ====================
   
   // Get options expirations
