@@ -10,7 +10,8 @@ import {
   Settings,
   Search,
   Bell,
-  TrendingUp
+  TrendingUp,
+  Calendar
 } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
@@ -25,6 +26,7 @@ const Sidebar = () => {
     { path: '/worldmap', icon: Globe, label: 'World Map' },
     { path: '/supplychain', icon: GitBranch, label: 'Supply Chain' },
     { path: '/screener', icon: Filter, label: 'Screener' },
+    { path: '/earnings', icon: Calendar, label: 'Earnings' },
   ];
 
   return (
