@@ -2608,15 +2608,19 @@ async def get_news(
     q: Optional[str] = None,
     country: Optional[str] = None,
     category: Optional[str] = None,
+    languages: Optional[str] = Query(None, description="Comma-separated language codes (en,fr)"),
     page_size: int = Query(20, ge=1, le=100)
 ):
-    """Get news articles"""
-    return await fetch_news(query=q, country=country, category=category, page_size=page_size)
+    """Get news articles in English and/or French"""
+    lang_list = None
+    if languages:
+        lang_list = [l.strip().lower() for l in languages.split(",") if l.strip().lower() in ['en', 'fr']]
+    return await fetch_news(query=q, country=country, category=category, page_size=page_size, languages=lang_list or ['en', 'fr'])
 
 @api_router.get("/news/breaking", response_model=List[NewsArticle])
 async def get_breaking_news():
-    """Get breaking/top headlines"""
-    return await fetch_news(page_size=10)
+    """Get breaking/top headlines in English and French"""
+    return await fetch_news(page_size=10, languages=['en', 'fr'])
 
 # Conflicts/Geopolitical Routes
 @api_router.get("/conflicts", response_model=List[ConflictEvent])
