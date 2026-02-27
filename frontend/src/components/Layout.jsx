@@ -11,7 +11,9 @@ import {
   Search,
   Bell,
   TrendingUp,
-  Calendar
+  Calendar,
+  Gem,
+  DollarSign
 } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
@@ -22,6 +24,8 @@ const Sidebar = () => {
   const navItems = [
     { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/quote', icon: LineChart, label: 'Quote' },
+    { path: '/commodities', icon: Gem, label: 'Commodities' },
+    { path: '/forex', icon: DollarSign, label: 'Forex' },
     { path: '/news', icon: Newspaper, label: 'News' },
     { path: '/worldmap', icon: Globe, label: 'World Map' },
     { path: '/supplychain', icon: GitBranch, label: 'Supply Chain' },
