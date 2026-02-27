@@ -525,6 +525,511 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+# ==================== SHIPPING DATA MODELS ====================
+
+class Port(BaseModel):
+    id: str
+    name: str
+    country: str
+    coordinates: List[float]  # [lng, lat]
+    port_type: str  # "seaport", "airport", "hub"
+    annual_volume: Optional[float] = None  # TEUs for ships, tonnes for air
+    volume_unit: str = "TEU"
+    region: str
+    is_major_hub: bool = False
+
+class ShippingRoute(BaseModel):
+    id: str
+    name: str
+    route_type: str  # "maritime", "air_cargo"
+    origin: Port
+    destination: Port
+    waypoints: List[List[float]] = []  # [[lng, lat], ...]
+    distance_km: float
+    average_transit_days: float
+    annual_volume: float
+    volume_unit: str
+    is_strategic: bool = False
+    chokepoints: List[str] = []
+    affected_by_conflicts: List[str] = []
+    disruption_level: float = 0  # 0-1 scale
+
+class ShippingStats(BaseModel):
+    total_maritime_routes: int
+    total_air_routes: int
+    total_ports: int
+    total_airports: int
+    routes_affected_by_conflicts: int
+    volume_at_risk_percent: float
+
+# ==================== MAJOR PORTS DATA ====================
+
+MAJOR_SEAPORTS = [
+    # Asia
+    {"id": "CNSHA", "name": "Shanghai", "country": "China", "coordinates": [121.4737, 31.2304], "annual_volume": 47000000, "region": "Asia", "is_major_hub": True},
+    {"id": "CNSZN", "name": "Shenzhen", "country": "China", "coordinates": [114.0579, 22.5431], "annual_volume": 30000000, "region": "Asia", "is_major_hub": True},
+    {"id": "CNNGB", "name": "Ningbo-Zhoushan", "country": "China", "coordinates": [121.5440, 29.8683], "annual_volume": 33000000, "region": "Asia", "is_major_hub": True},
+    {"id": "SGSIN", "name": "Singapore", "country": "Singapore", "coordinates": [103.8198, 1.3521], "annual_volume": 37000000, "region": "Asia", "is_major_hub": True},
+    {"id": "KRPUS", "name": "Busan", "country": "South Korea", "coordinates": [129.0756, 35.1796], "annual_volume": 22000000, "region": "Asia", "is_major_hub": True},
+    {"id": "HKHKG", "name": "Hong Kong", "country": "Hong Kong", "coordinates": [114.1694, 22.3193], "annual_volume": 18000000, "region": "Asia", "is_major_hub": True},
+    {"id": "TWKHH", "name": "Kaohsiung", "country": "Taiwan", "coordinates": [120.3014, 22.6273], "annual_volume": 15000000, "region": "Asia", "is_major_hub": True},
+    {"id": "JPTYO", "name": "Tokyo", "country": "Japan", "coordinates": [139.6917, 35.6895], "annual_volume": 4500000, "region": "Asia", "is_major_hub": False},
+    {"id": "VNHPH", "name": "Hai Phong", "country": "Vietnam", "coordinates": [106.6881, 20.8449], "annual_volume": 7000000, "region": "Asia", "is_major_hub": False},
+    {"id": "MYTPP", "name": "Port Klang", "country": "Malaysia", "coordinates": [101.3929, 2.9997], "annual_volume": 14000000, "region": "Asia", "is_major_hub": True},
+    # Middle East
+    {"id": "AEJEA", "name": "Jebel Ali (Dubai)", "country": "UAE", "coordinates": [55.0272, 25.0657], "annual_volume": 14500000, "region": "Middle East", "is_major_hub": True},
+    {"id": "SAJED", "name": "Jeddah", "country": "Saudi Arabia", "coordinates": [39.1728, 21.4858], "annual_volume": 4500000, "region": "Middle East", "is_major_hub": False},
+    # Europe
+    {"id": "NLRTM", "name": "Rotterdam", "country": "Netherlands", "coordinates": [4.4777, 51.9244], "annual_volume": 15000000, "region": "Europe", "is_major_hub": True},
+    {"id": "DEHAM", "name": "Hamburg", "country": "Germany", "coordinates": [9.9937, 53.5511], "annual_volume": 9000000, "region": "Europe", "is_major_hub": True},
+    {"id": "BEANR", "name": "Antwerp", "country": "Belgium", "coordinates": [4.4025, 51.2194], "annual_volume": 12000000, "region": "Europe", "is_major_hub": True},
+    {"id": "ESVLC", "name": "Valencia", "country": "Spain", "coordinates": [-0.3763, 39.4699], "annual_volume": 5700000, "region": "Europe", "is_major_hub": False},
+    {"id": "GRPIR", "name": "Piraeus", "country": "Greece", "coordinates": [23.6466, 37.9423], "annual_volume": 5400000, "region": "Europe", "is_major_hub": False},
+    {"id": "ITGOA", "name": "Genoa", "country": "Italy", "coordinates": [8.9463, 44.4056], "annual_volume": 2800000, "region": "Europe", "is_major_hub": False},
+    # Americas
+    {"id": "USNYC", "name": "New York/New Jersey", "country": "USA", "coordinates": [-74.0060, 40.7128], "annual_volume": 9500000, "region": "Americas", "is_major_hub": True},
+    {"id": "USLAX", "name": "Los Angeles", "country": "USA", "coordinates": [-118.2437, 33.7683], "annual_volume": 9000000, "region": "Americas", "is_major_hub": True},
+    {"id": "USLGB", "name": "Long Beach", "country": "USA", "coordinates": [-118.1937, 33.7701], "annual_volume": 8200000, "region": "Americas", "is_major_hub": True},
+    {"id": "USHOU", "name": "Houston", "country": "USA", "coordinates": [-95.3698, 29.7604], "annual_volume": 3800000, "region": "Americas", "is_major_hub": False},
+    {"id": "PAMIT", "name": "Panama (Balboa/Colon)", "country": "Panama", "coordinates": [-79.5341, 9.0000], "annual_volume": 7000000, "region": "Americas", "is_major_hub": True},
+    {"id": "BRSSZ", "name": "Santos", "country": "Brazil", "coordinates": [-46.3042, -23.9608], "annual_volume": 4500000, "region": "Americas", "is_major_hub": False},
+    # Africa
+    {"id": "EGPSD", "name": "Port Said", "country": "Egypt", "coordinates": [32.3019, 31.2565], "annual_volume": 3800000, "region": "Africa", "is_major_hub": True},
+    {"id": "ZADUR", "name": "Durban", "country": "South Africa", "coordinates": [31.0218, -29.8587], "annual_volume": 2900000, "region": "Africa", "is_major_hub": False},
+    {"id": "MATNG", "name": "Tanger Med", "country": "Morocco", "coordinates": [-5.7945, 35.8838], "annual_volume": 7200000, "region": "Africa", "is_major_hub": True},
+]
+
+MAJOR_AIRPORTS = [
+    # Asia
+    {"id": "HKGHKG", "name": "Hong Kong International", "country": "Hong Kong", "coordinates": [113.9185, 22.3080], "annual_volume": 4300000, "volume_unit": "tonnes", "region": "Asia", "is_major_hub": True},
+    {"id": "PVGSHA", "name": "Shanghai Pudong", "country": "China", "coordinates": [121.8083, 31.1443], "annual_volume": 3700000, "volume_unit": "tonnes", "region": "Asia", "is_major_hub": True},
+    {"id": "ICNSEL", "name": "Incheon (Seoul)", "country": "South Korea", "coordinates": [126.4505, 37.4602], "annual_volume": 3000000, "volume_unit": "tonnes", "region": "Asia", "is_major_hub": True},
+    {"id": "SINSGP", "name": "Singapore Changi", "country": "Singapore", "coordinates": [103.9915, 1.3644], "annual_volume": 2100000, "volume_unit": "tonnes", "region": "Asia", "is_major_hub": True},
+    {"id": "NRTTYO", "name": "Tokyo Narita", "country": "Japan", "coordinates": [140.3929, 35.7720], "annual_volume": 2200000, "volume_unit": "tonnes", "region": "Asia", "is_major_hub": True},
+    {"id": "TPETPE", "name": "Taipei Taoyuan", "country": "Taiwan", "coordinates": [121.2332, 25.0797], "annual_volume": 2300000, "volume_unit": "tonnes", "region": "Asia", "is_major_hub": True},
+    {"id": "BKKDMK", "name": "Bangkok Suvarnabhumi", "country": "Thailand", "coordinates": [100.7501, 13.6900], "annual_volume": 1400000, "volume_unit": "tonnes", "region": "Asia", "is_major_hub": False},
+    # Middle East
+    {"id": "DXBDXB", "name": "Dubai International", "country": "UAE", "coordinates": [55.3644, 25.2528], "annual_volume": 2600000, "volume_unit": "tonnes", "region": "Middle East", "is_major_hub": True},
+    {"id": "DOHDOH", "name": "Doha Hamad", "country": "Qatar", "coordinates": [51.6082, 25.2731], "annual_volume": 2100000, "volume_unit": "tonnes", "region": "Middle East", "is_major_hub": True},
+    # Europe
+    {"id": "FRAFRA", "name": "Frankfurt", "country": "Germany", "coordinates": [8.5706, 50.0333], "annual_volume": 2200000, "volume_unit": "tonnes", "region": "Europe", "is_major_hub": True},
+    {"id": "CDGPAR", "name": "Paris Charles de Gaulle", "country": "France", "coordinates": [2.5479, 49.0097], "annual_volume": 2100000, "volume_unit": "tonnes", "region": "Europe", "is_major_hub": True},
+    {"id": "LHRLON", "name": "London Heathrow", "country": "UK", "coordinates": [-0.4543, 51.4700], "annual_volume": 1700000, "volume_unit": "tonnes", "region": "Europe", "is_major_hub": True},
+    {"id": "AMSAMS", "name": "Amsterdam Schiphol", "country": "Netherlands", "coordinates": [4.7683, 52.3105], "annual_volume": 1800000, "volume_unit": "tonnes", "region": "Europe", "is_major_hub": True},
+    {"id": "LUXLUX", "name": "Luxembourg Findel", "country": "Luxembourg", "coordinates": [6.2044, 49.6233], "annual_volume": 900000, "volume_unit": "tonnes", "region": "Europe", "is_major_hub": True},
+    # Americas
+    {"id": "MEMUSA", "name": "Memphis", "country": "USA", "coordinates": [-89.9785, 35.0421], "annual_volume": 4800000, "volume_unit": "tonnes", "region": "Americas", "is_major_hub": True},
+    {"id": "ANCUSA", "name": "Anchorage", "country": "USA", "coordinates": [-149.9003, 61.2181], "annual_volume": 2800000, "volume_unit": "tonnes", "region": "Americas", "is_major_hub": True},
+    {"id": "SDFUSA", "name": "Louisville", "country": "USA", "coordinates": [-85.7585, 38.2527], "annual_volume": 2600000, "volume_unit": "tonnes", "region": "Americas", "is_major_hub": True},
+    {"id": "LAXUSA", "name": "Los Angeles International", "country": "USA", "coordinates": [-118.4085, 33.9425], "annual_volume": 2100000, "volume_unit": "tonnes", "region": "Americas", "is_major_hub": True},
+    {"id": "JFKUSA", "name": "New York JFK", "country": "USA", "coordinates": [-73.7781, 40.6413], "annual_volume": 1300000, "volume_unit": "tonnes", "region": "Americas", "is_major_hub": True},
+    {"id": "MIACMD", "name": "Miami", "country": "USA", "coordinates": [-80.2870, 25.7959], "annual_volume": 2100000, "volume_unit": "tonnes", "region": "Americas", "is_major_hub": True},
+]
+
+# ==================== STRATEGIC MARITIME ROUTES ====================
+
+MARITIME_ROUTES = [
+    {
+        "id": "asia_europe_suez",
+        "name": "Asia-Europe via Suez",
+        "origin": "CNSHA",
+        "destination": "NLRTM",
+        "waypoints": [[121.47, 31.23], [114.17, 22.32], [103.82, 1.35], [73.0, 7.0], [43.0, 12.0], [32.30, 31.26], [10.0, 36.0], [4.48, 51.92]],
+        "distance_km": 19500,
+        "average_transit_days": 28,
+        "annual_volume": 25000000,
+        "is_strategic": True,
+        "chokepoints": ["Suez Canal", "Strait of Malacca", "Bab el-Mandeb"],
+        "affected_by_conflicts": ["Red Sea", "Yemen"]
+    },
+    {
+        "id": "asia_europe_cape",
+        "name": "Asia-Europe via Cape of Good Hope",
+        "origin": "CNSHA",
+        "destination": "NLRTM",
+        "waypoints": [[121.47, 31.23], [114.17, 22.32], [103.82, 1.35], [55.0, -10.0], [20.0, -35.0], [-10.0, 5.0], [4.48, 51.92]],
+        "distance_km": 26000,
+        "average_transit_days": 40,
+        "annual_volume": 5000000,
+        "is_strategic": True,
+        "chokepoints": ["Cape of Good Hope", "Strait of Malacca"],
+        "affected_by_conflicts": []
+    },
+    {
+        "id": "asia_uswest",
+        "name": "Transpacific Asia-US West Coast",
+        "origin": "CNSHA",
+        "destination": "USLAX",
+        "waypoints": [[121.47, 31.23], [180.0, 35.0], [-150.0, 40.0], [-118.24, 33.77]],
+        "distance_km": 11500,
+        "average_transit_days": 14,
+        "annual_volume": 22000000,
+        "is_strategic": True,
+        "chokepoints": [],
+        "affected_by_conflicts": ["Taiwan Strait"]
+    },
+    {
+        "id": "asia_useast_panama",
+        "name": "Asia-US East Coast via Panama",
+        "origin": "CNSHA",
+        "destination": "USNYC",
+        "waypoints": [[121.47, 31.23], [180.0, 20.0], [-120.0, 25.0], [-79.53, 9.0], [-74.01, 40.71]],
+        "distance_km": 21000,
+        "average_transit_days": 30,
+        "annual_volume": 8000000,
+        "is_strategic": True,
+        "chokepoints": ["Panama Canal"],
+        "affected_by_conflicts": []
+    },
+    {
+        "id": "europe_useast",
+        "name": "Transatlantic Europe-US East",
+        "origin": "NLRTM",
+        "destination": "USNYC",
+        "waypoints": [[4.48, 51.92], [-30.0, 45.0], [-74.01, 40.71]],
+        "distance_km": 6000,
+        "average_transit_days": 10,
+        "annual_volume": 7500000,
+        "is_strategic": True,
+        "chokepoints": ["English Channel"],
+        "affected_by_conflicts": []
+    },
+    {
+        "id": "persian_gulf_asia",
+        "name": "Persian Gulf-Asia (Oil)",
+        "origin": "AEJEA",
+        "destination": "CNSHA",
+        "waypoints": [[55.03, 25.07], [56.5, 24.0], [73.0, 10.0], [103.82, 1.35], [121.47, 31.23]],
+        "distance_km": 9500,
+        "average_transit_days": 18,
+        "annual_volume": 18000000,
+        "is_strategic": True,
+        "chokepoints": ["Strait of Hormuz", "Strait of Malacca"],
+        "affected_by_conflicts": ["Iran", "Persian Gulf"]
+    },
+    {
+        "id": "intra_asia",
+        "name": "Intra-Asia (China-SE Asia)",
+        "origin": "CNSHA",
+        "destination": "SGSIN",
+        "waypoints": [[121.47, 31.23], [114.17, 22.32], [103.82, 1.35]],
+        "distance_km": 3900,
+        "average_transit_days": 5,
+        "annual_volume": 30000000,
+        "is_strategic": True,
+        "chokepoints": ["Strait of Malacca", "South China Sea"],
+        "affected_by_conflicts": ["South China Sea", "Taiwan"]
+    },
+    {
+        "id": "black_sea_med",
+        "name": "Black Sea-Mediterranean",
+        "origin": "UAODS",
+        "destination": "GRPIR",
+        "waypoints": [[30.73, 46.47], [29.0, 41.0], [26.0, 38.0], [23.65, 37.94]],
+        "distance_km": 1800,
+        "average_transit_days": 4,
+        "annual_volume": 3000000,
+        "is_strategic": True,
+        "chokepoints": ["Bosphorus Strait", "Dardanelles"],
+        "affected_by_conflicts": ["Ukraine", "Russia-Ukraine War"]
+    },
+    {
+        "id": "south_america_europe",
+        "name": "South America-Europe",
+        "origin": "BRSSZ",
+        "destination": "NLRTM",
+        "waypoints": [[-46.30, -23.96], [-30.0, -10.0], [-20.0, 20.0], [4.48, 51.92]],
+        "distance_km": 10500,
+        "average_transit_days": 18,
+        "annual_volume": 4000000,
+        "is_strategic": False,
+        "chokepoints": [],
+        "affected_by_conflicts": []
+    },
+    {
+        "id": "africa_asia",
+        "name": "Africa-Asia",
+        "origin": "ZADUR",
+        "destination": "SGSIN",
+        "waypoints": [[31.02, -29.86], [55.0, -10.0], [73.0, 7.0], [103.82, 1.35]],
+        "distance_km": 8500,
+        "average_transit_days": 16,
+        "annual_volume": 2500000,
+        "is_strategic": False,
+        "chokepoints": ["Strait of Malacca"],
+        "affected_by_conflicts": []
+    },
+]
+
+# ==================== STRATEGIC AIR CARGO ROUTES ====================
+
+AIR_CARGO_ROUTES = [
+    {
+        "id": "hk_fra",
+        "name": "Hong Kong-Frankfurt",
+        "origin": "HKGHKG",
+        "destination": "FRAFRA",
+        "waypoints": [[113.92, 22.31], [80.0, 35.0], [8.57, 50.03]],
+        "distance_km": 9200,
+        "average_transit_hours": 12,
+        "annual_volume": 850000,
+        "is_strategic": True,
+        "affected_by_conflicts": []
+    },
+    {
+        "id": "sha_anc_mem",
+        "name": "Shanghai-Anchorage-Memphis",
+        "origin": "PVGSHA",
+        "destination": "MEMUSA",
+        "waypoints": [[121.81, 31.14], [180.0, 50.0], [-149.90, 61.22], [-89.98, 35.04]],
+        "distance_km": 13500,
+        "average_transit_hours": 18,
+        "annual_volume": 1200000,
+        "is_strategic": True,
+        "affected_by_conflicts": []
+    },
+    {
+        "id": "dxb_lhr",
+        "name": "Dubai-London",
+        "origin": "DXBDXB",
+        "destination": "LHRLON",
+        "waypoints": [[55.36, 25.25], [30.0, 40.0], [-0.45, 51.47]],
+        "distance_km": 5500,
+        "average_transit_hours": 7,
+        "annual_volume": 650000,
+        "is_strategic": True,
+        "affected_by_conflicts": ["Middle East"]
+    },
+    {
+        "id": "icn_jfk",
+        "name": "Seoul-New York",
+        "origin": "ICNSEL",
+        "destination": "JFKUSA",
+        "waypoints": [[126.45, 37.46], [180.0, 55.0], [-149.90, 61.22], [-73.78, 40.64]],
+        "distance_km": 11100,
+        "average_transit_hours": 14,
+        "annual_volume": 550000,
+        "is_strategic": True,
+        "affected_by_conflicts": []
+    },
+    {
+        "id": "sin_ams",
+        "name": "Singapore-Amsterdam",
+        "origin": "SINSGP",
+        "destination": "AMSAMS",
+        "waypoints": [[103.99, 1.36], [73.0, 20.0], [4.77, 52.31]],
+        "distance_km": 10400,
+        "average_transit_hours": 13,
+        "annual_volume": 480000,
+        "is_strategic": True,
+        "affected_by_conflicts": []
+    },
+    {
+        "id": "mia_gru",
+        "name": "Miami-São Paulo",
+        "origin": "MIACMD",
+        "destination": "GRUGRU",
+        "waypoints": [[-80.29, 25.80], [-50.0, 0.0], [-46.47, -23.43]],
+        "distance_km": 6900,
+        "average_transit_hours": 8,
+        "annual_volume": 380000,
+        "is_strategic": False,
+        "affected_by_conflicts": []
+    },
+    {
+        "id": "fra_jfk",
+        "name": "Frankfurt-New York",
+        "origin": "FRAFRA",
+        "destination": "JFKUSA",
+        "waypoints": [[8.57, 50.03], [-30.0, 50.0], [-73.78, 40.64]],
+        "distance_km": 6200,
+        "average_transit_hours": 8,
+        "annual_volume": 520000,
+        "is_strategic": True,
+        "affected_by_conflicts": []
+    },
+    {
+        "id": "tpe_anc",
+        "name": "Taipei-Anchorage",
+        "origin": "TPETPE",
+        "destination": "ANCUSA",
+        "waypoints": [[121.23, 25.08], [150.0, 40.0], [-149.90, 61.22]],
+        "distance_km": 8800,
+        "average_transit_hours": 10,
+        "annual_volume": 720000,
+        "is_strategic": True,
+        "affected_by_conflicts": ["Taiwan"]
+    },
+    {
+        "id": "doh_cdg",
+        "name": "Doha-Paris",
+        "origin": "DOHDOH",
+        "destination": "CDGPAR",
+        "waypoints": [[51.61, 25.27], [30.0, 38.0], [2.55, 49.01]],
+        "distance_km": 5300,
+        "average_transit_hours": 6,
+        "annual_volume": 420000,
+        "is_strategic": True,
+        "affected_by_conflicts": []
+    },
+    {
+        "id": "nrt_lax",
+        "name": "Tokyo-Los Angeles",
+        "origin": "NRTTYO",
+        "destination": "LAXUSA",
+        "waypoints": [[140.39, 35.77], [180.0, 40.0], [-118.41, 33.94]],
+        "distance_km": 8800,
+        "average_transit_hours": 11,
+        "annual_volume": 580000,
+        "is_strategic": True,
+        "affected_by_conflicts": []
+    },
+]
+
+# ==================== SHIPPING SERVICES ====================
+
+def get_port_by_id(port_id: str, ports_list: List[Dict]) -> Optional[Port]:
+    """Get port by ID"""
+    for port_data in ports_list:
+        if port_data["id"] == port_id:
+            return Port(
+                id=port_data["id"],
+                name=port_data["name"],
+                country=port_data["country"],
+                coordinates=port_data["coordinates"],
+                port_type="seaport" if port_data in MAJOR_SEAPORTS else "airport",
+                annual_volume=port_data.get("annual_volume"),
+                volume_unit=port_data.get("volume_unit", "TEU"),
+                region=port_data["region"],
+                is_major_hub=port_data.get("is_major_hub", False)
+            )
+    return None
+
+def calculate_disruption_level(route: Dict, conflicts: List[Dict]) -> float:
+    """Calculate disruption level based on conflicts affecting the route"""
+    if not route.get("affected_by_conflicts"):
+        return 0.0
+    
+    total_impact = 0.0
+    for conflict_keyword in route["affected_by_conflicts"]:
+        for conflict in conflicts:
+            if (conflict_keyword.lower() in conflict.get("title", "").lower() or 
+                conflict_keyword.lower() in conflict.get("country", "").lower()):
+                severity = conflict.get("severity", 5)
+                total_impact += severity / 10
+    
+    return min(total_impact, 1.0)
+
+def get_shipping_routes(route_type: str = "all", conflicts: List[Dict] = None) -> List[ShippingRoute]:
+    """Get shipping routes with disruption levels"""
+    routes = []
+    conflicts = conflicts or []
+    
+    # Maritime routes
+    if route_type in ["all", "maritime"]:
+        for route_data in MARITIME_ROUTES:
+            origin_port = get_port_by_id(route_data["origin"], MAJOR_SEAPORTS)
+            dest_port = get_port_by_id(route_data["destination"], MAJOR_SEAPORTS)
+            
+            if not origin_port or not dest_port:
+                continue
+            
+            disruption = calculate_disruption_level(route_data, conflicts)
+            
+            routes.append(ShippingRoute(
+                id=route_data["id"],
+                name=route_data["name"],
+                route_type="maritime",
+                origin=origin_port,
+                destination=dest_port,
+                waypoints=route_data["waypoints"],
+                distance_km=route_data["distance_km"],
+                average_transit_days=route_data["average_transit_days"],
+                annual_volume=route_data["annual_volume"],
+                volume_unit="TEU",
+                is_strategic=route_data["is_strategic"],
+                chokepoints=route_data.get("chokepoints", []),
+                affected_by_conflicts=route_data.get("affected_by_conflicts", []),
+                disruption_level=disruption
+            ))
+    
+    # Air cargo routes
+    if route_type in ["all", "air"]:
+        for route_data in AIR_CARGO_ROUTES:
+            origin_port = get_port_by_id(route_data["origin"], MAJOR_AIRPORTS)
+            dest_port = get_port_by_id(route_data["destination"], MAJOR_AIRPORTS)
+            
+            if not origin_port or not dest_port:
+                continue
+            
+            disruption = calculate_disruption_level(route_data, conflicts)
+            
+            routes.append(ShippingRoute(
+                id=route_data["id"],
+                name=route_data["name"],
+                route_type="air_cargo",
+                origin=origin_port,
+                destination=dest_port,
+                waypoints=route_data["waypoints"],
+                distance_km=route_data["distance_km"],
+                average_transit_days=route_data.get("average_transit_hours", 12) / 24,
+                annual_volume=route_data["annual_volume"],
+                volume_unit="tonnes",
+                is_strategic=route_data["is_strategic"],
+                chokepoints=[],
+                affected_by_conflicts=route_data.get("affected_by_conflicts", []),
+                disruption_level=disruption
+            ))
+    
+    return routes
+
+def get_all_ports() -> Dict[str, List[Port]]:
+    """Get all ports and airports"""
+    seaports = [Port(
+        id=p["id"],
+        name=p["name"],
+        country=p["country"],
+        coordinates=p["coordinates"],
+        port_type="seaport",
+        annual_volume=p.get("annual_volume"),
+        volume_unit="TEU",
+        region=p["region"],
+        is_major_hub=p.get("is_major_hub", False)
+    ) for p in MAJOR_SEAPORTS]
+    
+    airports = [Port(
+        id=p["id"],
+        name=p["name"],
+        country=p["country"],
+        coordinates=p["coordinates"],
+        port_type="airport",
+        annual_volume=p.get("annual_volume"),
+        volume_unit=p.get("volume_unit", "tonnes"),
+        region=p["region"],
+        is_major_hub=p.get("is_major_hub", False)
+    ) for p in MAJOR_AIRPORTS]
+    
+    return {"seaports": seaports, "airports": airports}
+
+def get_shipping_stats(routes: List[ShippingRoute]) -> ShippingStats:
+    """Calculate shipping statistics"""
+    maritime_routes = [r for r in routes if r.route_type == "maritime"]
+    air_routes = [r for r in routes if r.route_type == "air_cargo"]
+    affected_routes = [r for r in routes if r.disruption_level > 0]
+    
+    total_volume = sum(r.annual_volume for r in routes)
+    affected_volume = sum(r.annual_volume for r in affected_routes)
+    volume_at_risk = (affected_volume / total_volume * 100) if total_volume > 0 else 0
+    
+    return ShippingStats(
+        total_maritime_routes=len(maritime_routes),
+        total_air_routes=len(air_routes),
+        total_ports=len(MAJOR_SEAPORTS),
+        total_airports=len(MAJOR_AIRPORTS),
+        routes_affected_by_conflicts=len(affected_routes),
+        volume_at_risk_percent=volume_at_risk
+    )
+
 # ==================== TECHNICAL INDICATORS CALCULATION ====================
 
 def calculate_sma(prices: List[float], period: int) -> Optional[float]:
