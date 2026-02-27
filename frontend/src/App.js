@@ -10,6 +10,8 @@ import SupplyChainPage from "./pages/SupplyChainPage";
 import ScreenerPage from "./pages/ScreenerPage";
 import SettingsPage from "./pages/SettingsPage";
 import EarningsPage from "./pages/EarningsPage";
+import CommoditiesPage from "./pages/CommoditiesPage";
+import ForexPage from "./pages/ForexPage";
 import { Toaster } from "./components/ui/sonner";
 
 function App() {
@@ -25,6 +27,8 @@ function App() {
             <Route path="/supplychain" element={<SupplyChainPage />} />
             <Route path="/screener" element={<ScreenerPage />} />
             <Route path="/earnings" element={<EarningsPage />} />
+            <Route path="/commodities" element={<CommoditiesPage />} />
+            <Route path="/forex" element={<ForexPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </Layout>
