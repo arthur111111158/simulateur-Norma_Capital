@@ -19,6 +19,7 @@ export const AppProvider = ({ children }) => {
   const [movers, setMovers] = useState({ gainers: [], losers: [] });
   const [loading, setLoading] = useState(true);
   const [selectedAsset, setSelectedAsset] = useState(null);
+  const [universe, setUniverse] = useState(null);
 
   // Fetch watchlist
   const fetchWatchlist = useCallback(async () => {
