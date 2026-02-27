@@ -3713,6 +3713,12 @@ async def get_shareholders(symbol: str):
     """Get shareholders data for a company"""
     return await fetch_shareholders_data(symbol.upper())
 
+@api_router.get("/shareholders/{symbol}/history")
+async def get_shareholders_history(symbol: str):
+    """Get historical shareholding changes"""
+    history = await fetch_shareholders_history(symbol.upper())
+    return {"symbol": symbol.upper(), "history": history}
+
 # Impact Score Routes
 @api_router.get("/impact/{symbol}", response_model=Optional[ImpactScore])
 async def get_impact_score(symbol: str):
