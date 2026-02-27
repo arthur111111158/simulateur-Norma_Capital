@@ -1915,8 +1915,16 @@ async def fetch_earnings_calendar(days_ahead: int = 14, region: Optional[str] = 
     for symbol in symbols:
         event = get_earnings_for_symbol(symbol)
         if event and event.earnings_date:
-            if now <= event.earnings_date <= end_date:
-                events.append(event)
+            # Ensure earnings_date is timezone aware
+            event_date = event.earnings_date
+            if event_date.tzinfo is None:
+                event_date = event_date.replace(tzinfo=timezone.utc)
+            try:
+                if now <= event_date <= end_date:
+                    events.append(event)
+            except TypeError:
+                # Skip if date comparison fails
+                pass
     
     # Sort by date
     events.sort(key=lambda x: x.earnings_date)
