@@ -201,12 +201,13 @@ export const AppProvider = ({ children }) => {
         fetchWatchlist(),
         fetchNews(),
         fetchConflicts(),
-        fetchMovers()
+        fetchMovers(),
+        fetchUniverse()
       ]);
       setLoading(false);
     };
     loadInitialData();
-  }, [fetchWatchlist, fetchNews, fetchConflicts, fetchMovers]);
+  }, [fetchWatchlist, fetchNews, fetchConflicts, fetchMovers, fetchUniverse]);
 
   // Auto-refresh data every 60 seconds
   useEffect(() => {
