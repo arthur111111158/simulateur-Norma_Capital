@@ -1,34 +1,180 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
-}
-
-.App-header {
-    background-color: #0f0f10;
+.App {
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+    background-color: #09090b;
 }
 
-.App-link {
-    color: #61dafb;
+/* ReactFlow custom styling */
+.react-flow__node {
+    cursor: pointer;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
+.react-flow__edge-path {
+    stroke-width: 2;
+}
+
+.react-flow__controls {
+    background-color: #18181b !important;
+    border-color: #27272a !important;
+    border-radius: 2px !important;
+}
+
+.react-flow__controls-button {
+    background-color: #18181b !important;
+    border-color: #27272a !important;
+    fill: #a1a1aa !important;
+}
+
+.react-flow__controls-button:hover {
+    background-color: #27272a !important;
+}
+
+.react-flow__minimap {
+    background-color: #09090b !important;
+    border: 1px solid #27272a !important;
+    border-radius: 2px !important;
+}
+
+/* Recharts customization */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+    stroke: #27272a;
+}
+
+.recharts-tooltip-wrapper {
+    z-index: 1000 !important;
+}
+
+/* Map styling */
+.rsm-geography {
+    cursor: pointer;
+    transition: fill 0.1s ease;
+}
+
+.rsm-geography:focus {
+    outline: none;
+}
+
+.rsm-marker {
+    cursor: pointer;
+}
+
+/* Custom scrollbar for specific containers */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #3f3f46;
+    border-radius: 2px;
+}
+
+/* Line clamp utilities */
+.line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Animation for loading states */
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
     }
-    to {
-        transform: rotate(360deg);
+    100% {
+        background-position: 200% 0;
     }
+}
+
+.animate-shimmer {
+    background: linear-gradient(90deg, #18181b 25%, #27272a 50%, #18181b 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+/* Pulse animation for live indicators */
+@keyframes live-pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.5;
+        transform: scale(0.95);
+    }
+}
+
+.live-pulse {
+    animation: live-pulse 2s ease-in-out infinite;
+}
+
+/* Focus states */
+input:focus,
+button:focus,
+select:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.3);
+}
+
+/* Transitions */
+.transition-fast {
+    transition: all 0.075s ease;
+}
+
+.transition-normal {
+    transition: all 0.15s ease;
+}
+
+/* Card hover effect */
+.card-hover {
+    transition: border-color 0.1s ease, box-shadow 0.1s ease;
+}
+
+.card-hover:hover {
+    border-color: #3f3f46;
+}
+
+/* Price flash animations */
+@keyframes flash-green {
+    0%, 100% {
+        background-color: transparent;
+    }
+    50% {
+        background-color: rgba(34, 197, 94, 0.2);
+    }
+}
+
+@keyframes flash-red {
+    0%, 100% {
+        background-color: transparent;
+    }
+    50% {
+        background-color: rgba(239, 68, 68, 0.2);
+    }
+}
+
+.flash-green {
+    animation: flash-green 0.3s ease;
+}
+
+.flash-red {
+    animation: flash-red 0.3s ease;
 }
