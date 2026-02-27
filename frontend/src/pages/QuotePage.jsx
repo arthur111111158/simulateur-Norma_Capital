@@ -821,14 +821,15 @@ const QuotePage = () => {
                           {/* Pie Chart */}
                           <div className="w-[180px] h-[180px] flex-shrink-0">
                             {(() => {
+                              // Colors matching Tailwind classes used in the list
                               const COLORS = {
-                                family: '#a855f7',      // Purple
-                                government: '#3b82f6',  // Blue
-                                institutional: '#f59e0b', // Amber
-                                corporate: '#22c55e',   // Green
-                                mutual_fund: '#06b6d4', // Cyan
-                                insider: '#ec4899',     // Pink
-                                other: '#71717a'        // Gray
+                                family: '#c084fc',      // purple-400
+                                government: '#60a5fa',  // blue-400
+                                institutional: '#fbbf24', // amber-400
+                                corporate: '#4ade80',   // green-400
+                                mutual_fund: '#22d3ee', // cyan-400
+                                insider: '#f472b6',     // pink-400
+                                other: '#a1a1aa'        // zinc-400
                               };
                               const holders = shareholders.major_holders?.length > 0 
                                 ? shareholders.major_holders 
