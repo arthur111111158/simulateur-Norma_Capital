@@ -37,7 +37,7 @@ import OptionsChain from '../components/OptionsChain';
 const QuotePage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { getQuote, getHistory, getSupplyChain, searchAssets, addToWatchlist, watchlist, removeFromWatchlist, news, getTechnicalIndicators, getImpactScore } = useApp();
+  const { getQuote, getHistory, getSupplyChain, getShareholders, searchAssets, addToWatchlist, watchlist, removeFromWatchlist, news, getTechnicalIndicators, getImpactScore } = useApp();
   
   const [symbol, setSymbol] = useState(searchParams.get('symbol') || 'AAPL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -45,6 +45,7 @@ const QuotePage = () => {
   const [quote, setQuote] = useState(null);
   const [history, setHistory] = useState(null);
   const [supplyChain, setSupplyChain] = useState([]);
+  const [shareholders, setShareholders] = useState(null);
   const [technicals, setTechnicals] = useState(null);
   const [impactScore, setImpactScore] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -58,10 +59,11 @@ const QuotePage = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const [quoteData, historyData, supplyChainData, techData, impactData] = await Promise.all([
+      const [quoteData, historyData, supplyChainData, shareholdersData, techData, impactData] = await Promise.all([
         getQuote(symbol),
         getHistory(symbol, period, interval),
         getSupplyChain(symbol),
+        getShareholders(symbol),
         getTechnicalIndicators(symbol),
         getImpactScore(symbol)
       ]);
@@ -69,6 +71,7 @@ const QuotePage = () => {
       setQuote(quoteData);
       setHistory(historyData);
       setSupplyChain(supplyChainData);
+      setShareholders(shareholdersData);
       setTechnicals(techData);
       setImpactScore(impactData);
       setLoading(false);
@@ -77,7 +80,7 @@ const QuotePage = () => {
     if (symbol) {
       fetchData();
     }
-  }, [symbol, period, interval, getQuote, getHistory, getSupplyChain, getTechnicalIndicators, getImpactScore]);
+  }, [symbol, period, interval, getQuote, getHistory, getSupplyChain, getShareholders, getTechnicalIndicators, getImpactScore]);
 
   // Handle search
   useEffect(() => {
