@@ -373,6 +373,90 @@ CURRENCIES = {
     "SAR": {"name": "Saudi Riyal", "symbol": "﷼", "flag": "🇸🇦"},
 }
 
+# ==================== FOREX RATES CACHE (in-memory) ====================
+# Cache forex rates to avoid rate limiting
+_forex_rates_cache = {}
+_forex_rates_cache_time = None
+FOREX_CACHE_TTL_SECONDS = 300  # 5 minutes
+
+async def get_cached_forex_rates():
+    """Get cached forex rates or fetch fresh ones"""
+    global _forex_rates_cache, _forex_rates_cache_time
+    
+    now = datetime.now(timezone.utc)
+    
+    # Check if cache is still valid
+    if _forex_rates_cache_time and (now - _forex_rates_cache_time).total_seconds() < FOREX_CACHE_TTL_SECONDS:
+        return _forex_rates_cache
+    
+    # Fetch fresh rates
+    rates = {}
+    for symbol, info in FOREX_PAIRS.items():
+        try:
+            ticker = yf.Ticker(symbol)
+            hist = ticker.history(period="1d")
+            if not hist.empty:
+                rate = hist['Close'].iloc[-1]
+                rates[symbol] = {
+                    'rate': float(rate),
+                    'base': info['base'],
+                    'quote': info['quote']
+                }
+        except Exception as e:
+            logger.warning(f"Could not fetch rate for {symbol}: {e}")
+    
+    if rates:
+        _forex_rates_cache = rates
+        _forex_rates_cache_time = now
+    
+    return _forex_rates_cache
+
+def get_forex_rate_from_cache(base: str, quote: str, cached_rates: dict) -> float:
+    """Calculate forex rate from cached rates"""
+    if base == quote:
+        return 1.0
+    
+    # Try direct pair
+    direct_symbol = f"{base}{quote}=X"
+    if direct_symbol in cached_rates:
+        return cached_rates[direct_symbol]['rate']
+    
+    # Try inverse pair
+    inverse_symbol = f"{quote}{base}=X"
+    if inverse_symbol in cached_rates:
+        rate = cached_rates[inverse_symbol]['rate']
+        if rate > 0:
+            return 1.0 / rate
+    
+    # Try cross via USD
+    base_to_usd = 1.0
+    usd_to_quote = 1.0
+    
+    if base != "USD":
+        base_usd = f"{base}USD=X"
+        usd_base = f"USD{base}=X"
+        if base_usd in cached_rates:
+            base_to_usd = cached_rates[base_usd]['rate']
+        elif usd_base in cached_rates and cached_rates[usd_base]['rate'] > 0:
+            base_to_usd = 1.0 / cached_rates[usd_base]['rate']
+        else:
+            return None
+    
+    if quote != "USD":
+        usd_quote = f"USD{quote}=X"
+        quote_usd = f"{quote}USD=X"
+        if usd_quote in cached_rates:
+            usd_to_quote = cached_rates[usd_quote]['rate']
+        elif quote_usd in cached_rates and cached_rates[quote_usd]['rate'] > 0:
+            usd_to_quote = 1.0 / cached_rates[quote_usd]['rate']
+        else:
+            return None
+    
+    if base_to_usd and usd_to_quote:
+        return base_to_usd * usd_to_quote
+    
+    return None
+
 # ==================== MODELS ====================
 
 class AssetQuote(BaseModel):
