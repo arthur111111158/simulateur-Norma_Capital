@@ -20,12 +20,14 @@ import {
   Newspaper,
   Activity,
   AlertTriangle,
-  Target
+  Target,
+  BarChart2
 } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, 
   AreaChart, Area, CartesianGrid, Bar, BarChart 
 } from 'recharts';
+import OptionsChain from '../components/OptionsChain';
 
 const QuotePage = () => {
   const [searchParams] = useSearchParams();
