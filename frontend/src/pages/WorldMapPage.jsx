@@ -664,6 +664,55 @@ const WorldMapPage = () => {
                         </Marker>
                       );
                     })}
+
+                    {/* News Hotspots - Heatmap circles showing most mentioned regions */}
+                    {(activeLayer === 'all' || activeLayer === 'news') && newsHotspots.map((hotspot, i) => (
+                      <Marker key={`hotspot-${i}`} coordinates={hotspot.coords}>
+                        <g 
+                          transform="translate(-20, -20)"
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => zoomToLocation(hotspot.coords, 3)}
+                        >
+                          {/* Outer glow */}
+                          <circle
+                            cx="20"
+                            cy="20"
+                            r={15 + hotspot.intensity * 20}
+                            fill="#f59e0b"
+                            opacity={0.1 + hotspot.intensity * 0.15}
+                          />
+                          {/* Inner circle */}
+                          <circle
+                            cx="20"
+                            cy="20"
+                            r={8 + hotspot.intensity * 10}
+                            fill="#f59e0b"
+                            opacity={0.3 + hotspot.intensity * 0.3}
+                            stroke="#fbbf24"
+                            strokeWidth={1}
+                          />
+                          {/* Count badge */}
+                          <circle
+                            cx="20"
+                            cy="20"
+                            r={8}
+                            fill="#18181b"
+                            stroke="#f59e0b"
+                            strokeWidth={2}
+                          />
+                          <text
+                            x="20"
+                            y="24"
+                            textAnchor="middle"
+                            fill="#f59e0b"
+                            fontSize="10"
+                            fontWeight="bold"
+                          >
+                            {hotspot.count}
+                          </text>
+                        </g>
+                      </Marker>
+                    ))}
                   </ZoomableGroup>
                 </ComposableMap>
 
