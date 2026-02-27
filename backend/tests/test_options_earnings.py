@@ -313,8 +313,9 @@ class TestHealthAndNavigation:
         assert response.status_code == 200, f"Expected 200, got {response.status_code}"
         
         data = response.json()
-        assert "stocks" in data, "Response should have 'stocks' field"
-        print(f"PASS: Market universe has {len(data.get('stocks', []))} stocks")
+        # Universe returns us, europe, asia, commodities, forex, indices keys
+        assert "us" in data or "europe" in data or "asia" in data, "Response should have region fields"
+        print(f"PASS: Market universe has US: {len(data.get('us', []))}, Europe: {len(data.get('europe', []))}, Asia: {len(data.get('asia', []))} stocks")
 
 
 if __name__ == "__main__":
