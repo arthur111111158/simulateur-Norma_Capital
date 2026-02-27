@@ -236,10 +236,11 @@ Air Liquide, Airbus, Alstom, Atos, AXA, BNP Paribas, Bouygues, Bureau Veritas, C
 - [x] Core terminal UI with navigation
 - [x] Real-time stock quotes
 - [x] Price charts with multiple timeframes
+- [x] **Candlestick chart** with Line/Candles toggle
 - [x] News feed with tagging (Yahoo Finance + Boursorama - LIVE)
 - [x] Conflict map (GDELT - LIVE, English titles)
-- [x] Supply chain graph
-- [x] Global stock coverage (US, Europe, Asia)
+- [x] Supply chain graph (extended to DAX/FTSE)
+- [x] Global stock coverage (US, Europe, Asia - 340+ stocks)
 - [x] Technical indicators (RSI, MACD, SMA, Bollinger)
 - [x] Dynamic impact scoring
 - [x] MongoDB caching for news/conflicts
@@ -251,6 +252,8 @@ Air Liquide, Airbus, Alstom, Atos, AXA, BNP Paribas, Bouygues, Bureau Veritas, C
 - [x] Route disruption analysis based on conflicts
 - [x] Forex currency converter
 - [x] News in English AND French only
+- [x] **Major Shareholders with Pie Chart**
+- [x] **Shareholders History** (quarterly changes)
 
 ### P1 - High Priority (Next)
 - [ ] Real-time shipping data via AIS API (MarineTraffic/VesselFinder)
