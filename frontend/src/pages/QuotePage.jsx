@@ -21,11 +21,16 @@ import {
   Activity,
   AlertTriangle,
   Target,
-  BarChart2
+  BarChart2,
+  Users,
+  Building2,
+  Landmark,
+  UserCircle
 } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, 
-  AreaChart, Area, CartesianGrid, Bar, BarChart 
+  AreaChart, Area, CartesianGrid, Bar, BarChart,
+  PieChart, Pie, Cell
 } from 'recharts';
 import OptionsChain from '../components/OptionsChain';
 
