@@ -225,6 +225,7 @@ export const AppProvider = ({ children }) => {
     movers,
     loading,
     selectedAsset,
+    universe,
     setSelectedAsset,
     fetchWatchlist,
     addToWatchlist,
@@ -232,11 +233,15 @@ export const AppProvider = ({ children }) => {
     fetchNews,
     fetchConflicts,
     fetchMovers,
+    fetchUniverse,
     getQuote,
     getHistory,
     getSupplyChain,
     searchAssets,
     screenAssets,
+    getTechnicalIndicators,
+    getImpactScore,
+    getIndices,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
