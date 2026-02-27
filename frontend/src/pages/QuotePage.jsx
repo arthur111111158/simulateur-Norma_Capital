@@ -49,38 +49,60 @@ const QuotePage = () => {
   const [technicals, setTechnicals] = useState(null);
   const [impactScore, setImpactScore] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [secondaryLoading, setSecondaryLoading] = useState(true);
   const [period, setPeriod] = useState('1mo');
   const [interval, setIntervalState] = useState('1d');
 
   // Check if in watchlist
   const isInWatchlist = watchlist.some(item => item.symbol === symbol);
 
-  // Fetch data
+  // Fetch CRITICAL data first (quote + history) - shows immediately
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchCriticalData = async () => {
       setLoading(true);
-      const [quoteData, historyData, supplyChainData, shareholdersData, techData, impactData] = await Promise.all([
+      
+      // Load critical data first (quote and chart)
+      const [quoteData, historyData] = await Promise.all([
         getQuote(symbol),
         getHistory(symbol, period, interval),
+      ]);
+      
+      setQuote(quoteData);
+      setHistory(historyData);
+      setLoading(false);
+    };
+    
+    if (symbol) {
+      fetchCriticalData();
+    }
+  }, [symbol, period, interval, getQuote, getHistory]);
+
+  // Fetch SECONDARY data after critical data loads
+  useEffect(() => {
+    const fetchSecondaryData = async () => {
+      if (!quote) return; // Wait for quote to load first
+      
+      setSecondaryLoading(true);
+      
+      // Load secondary data in background
+      const [supplyChainData, shareholdersData, techData, impactData] = await Promise.all([
         getSupplyChain(symbol),
         getShareholders(symbol),
         getTechnicalIndicators(symbol),
         getImpactScore(symbol)
       ]);
       
-      setQuote(quoteData);
-      setHistory(historyData);
       setSupplyChain(supplyChainData);
       setShareholders(shareholdersData);
       setTechnicals(techData);
       setImpactScore(impactData);
-      setLoading(false);
+      setSecondaryLoading(false);
     };
     
-    if (symbol) {
-      fetchData();
+    if (symbol && quote) {
+      fetchSecondaryData();
     }
-  }, [symbol, period, interval, getQuote, getHistory, getSupplyChain, getShareholders, getTechnicalIndicators, getImpactScore]);
+  }, [symbol, quote, getSupplyChain, getShareholders, getTechnicalIndicators, getImpactScore]);
 
   // Handle search
   useEffect(() => {
