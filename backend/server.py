@@ -2025,9 +2025,6 @@ def get_mock_news() -> List[NewsArticle]:
             tags=["ASIA", "CHINA", "JAPAN"],
             sentiment="neutral",
             language="fr"
-        ),
-            tags=["ASIA", "CHINA", "JAPAN"],
-            sentiment="neutral"
         )
     ]
 
