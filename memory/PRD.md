@@ -18,10 +18,30 @@ Build a "Bloomberg-like Terminal" covering:
 - **Backend**: FastAPI + Motor (MongoDB async)
 - **Database**: MongoDB (with caching for news/conflicts/earnings/forex)
 - **Data Sources**: 
-  - Yahoo Finance (real-time market data - 163+ global stocks, options, earnings, forex rates, NEWS)
+  - Yahoo Finance (real-time market data - **340+ global stocks**, options, earnings, forex rates, NEWS)
   - Boursorama (French financial news - LIVE scraping)
   - GDELT GEO API (geopolitical events - LIVE with MongoDB cache)
   - Static Shipping Data (27 seaports, 20 airports, 18 routes with dynamic disruption analysis)
+
+## Stock Coverage (340+ actions)
+| Région | Nombre | Bourses |
+|--------|--------|---------|
+| **France** | **60** | Euronext Paris (CAC 40 + SBF 120) |
+| Allemagne | 31 | Xetra (DAX 40) |
+| UK | 27 | London (FTSE 100) |
+| Italie | 15 | Milan (FTSE MIB) |
+| Suisse | 14 | Zurich (SMI) |
+| Pays-Bas | 12 | Amsterdam (AEX) |
+| Espagne | 10 | Madrid (IBEX 35) |
+| Nordique | 12 | Copenhagen, Stockholm, Oslo, Helsinki |
+| Belgique | 3 | Brussels |
+| **Total Europe** | **201** | - |
+| USA | 52 | NYSE, NASDAQ |
+| Asie | 87 | Tokyo, Hong Kong, Shanghai, Sydney, Singapore, Seoul, Mumbai |
+| **TOTAL** | **340+** | - |
+
+### Actions Françaises Incluses (60)
+Air Liquide, Airbus, Alstom, Atos, AXA, BNP Paribas, Bouygues, Bureau Veritas, Capgemini, Carrefour, Crédit Agricole, Danone, Dassault Systèmes, Eiffage, Engie, EssilorLuxottica, Eurofins, Getlink, Hermès, Iliad, Kering, L'Oréal, Legrand, LVMH, Michelin, Orange, Pernod Ricard, Publicis, Rémy Cointreau, Renault, Safran, Saint-Gobain, Sanofi, Schneider Electric, Scor, SEB, Société Générale, Sodexo, Spie, Stellantis, STMicroelectronics, Teleperformance, Thales, TotalEnergies, Ubisoft, Unibail, Valeo, Veolia, Vinci, Vivendi, Worldline...
 
 ## User Personas
 1. **Financial Analysts**: Need comprehensive market data and news in one terminal
