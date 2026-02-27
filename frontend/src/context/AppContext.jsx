@@ -1,0 +1,190 @@
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
+
+const AppContext = createContext(null);
+
+export const useApp = () => {
+  const context = useContext(AppContext);
+  if (!context) throw new Error('useApp must be used within AppProvider');
+  return context;
+};
+
+export const AppProvider = ({ children }) => {
+  const [watchlist, setWatchlist] = useState([]);
+  const [news, setNews] = useState([]);
+  const [conflicts, setConflicts] = useState([]);
+  const [movers, setMovers] = useState({ gainers: [], losers: [] });
+  const [loading, setLoading] = useState(true);
+  const [selectedAsset, setSelectedAsset] = useState(null);
+
+  // Fetch watchlist
+  const fetchWatchlist = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API}/watchlist`);
+      setWatchlist(response.data);
+    } catch (error) {
+      console.error('Error fetching watchlist:', error);
+    }
+  }, []);
+
+  // Add to watchlist
+  const addToWatchlist = async (symbol, name, assetType) => {
+    try {
+      await axios.post(`${API}/watchlist`, { symbol, name, asset_type: assetType });
+      fetchWatchlist();
+    } catch (error) {
+      console.error('Error adding to watchlist:', error);
+    }
+  };
+
+  // Remove from watchlist
+  const removeFromWatchlist = async (symbol) => {
+    try {
+      await axios.delete(`${API}/watchlist/${symbol}`);
+      fetchWatchlist();
+    } catch (error) {
+      console.error('Error removing from watchlist:', error);
+    }
+  };
+
+  // Fetch news
+  const fetchNews = useCallback(async (query = null, country = null) => {
+    try {
+      const params = new URLSearchParams();
+      if (query) params.append('q', query);
+      if (country) params.append('country', country);
+      const response = await axios.get(`${API}/news?${params.toString()}`);
+      setNews(response.data);
+    } catch (error) {
+      console.error('Error fetching news:', error);
+    }
+  }, []);
+
+  // Fetch conflicts
+  const fetchConflicts = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API}/conflicts`);
+      setConflicts(response.data);
+    } catch (error) {
+      console.error('Error fetching conflicts:', error);
+    }
+  }, []);
+
+  // Fetch movers
+  const fetchMovers = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API}/market/movers`);
+      setMovers(response.data);
+    } catch (error) {
+      console.error('Error fetching movers:', error);
+    }
+  }, []);
+
+  // Get quote
+  const getQuote = async (symbol) => {
+    try {
+      const response = await axios.get(`${API}/market/quote/${symbol}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching quote:', error);
+      return null;
+    }
+  };
+
+  // Get history
+  const getHistory = async (symbol, period = '1mo', interval = '1d') => {
+    try {
+      const response = await axios.get(`${API}/market/history/${symbol}?period=${period}&interval=${interval}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching history:', error);
+      return null;
+    }
+  };
+
+  // Get supply chain
+  const getSupplyChain = async (symbol) => {
+    try {
+      const response = await axios.get(`${API}/supplychain/${symbol}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching supply chain:', error);
+      return [];
+    }
+  };
+
+  // Search assets
+  const searchAssets = async (query) => {
+    try {
+      const response = await axios.get(`${API}/market/search?q=${query}`);
+      return response.data.results;
+    } catch (error) {
+      console.error('Error searching assets:', error);
+      return [];
+    }
+  };
+
+  // Screen assets
+  const screenAssets = async (assetType, filters = {}) => {
+    try {
+      const params = new URLSearchParams({ asset_type: assetType, ...filters });
+      const response = await axios.get(`${API}/screener?${params.toString()}`);
+      return response.data.results;
+    } catch (error) {
+      console.error('Error screening assets:', error);
+      return [];
+    }
+  };
+
+  // Initial data load
+  useEffect(() => {
+    const loadInitialData = async () => {
+      setLoading(true);
+      await Promise.all([
+        fetchWatchlist(),
+        fetchNews(),
+        fetchConflicts(),
+        fetchMovers()
+      ]);
+      setLoading(false);
+    };
+    loadInitialData();
+  }, [fetchWatchlist, fetchNews, fetchConflicts, fetchMovers]);
+
+  // Auto-refresh data every 60 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchMovers();
+      fetchNews();
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [fetchMovers, fetchNews]);
+
+  const value = {
+    watchlist,
+    news,
+    conflicts,
+    movers,
+    loading,
+    selectedAsset,
+    setSelectedAsset,
+    fetchWatchlist,
+    addToWatchlist,
+    removeFromWatchlist,
+    fetchNews,
+    fetchConflicts,
+    fetchMovers,
+    getQuote,
+    getHistory,
+    getSupplyChain,
+    searchAssets,
+    screenAssets,
+  };
+
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+};
+
+export default AppContext;
