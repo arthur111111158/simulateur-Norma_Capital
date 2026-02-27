@@ -338,11 +338,252 @@ def get_mock_news() -> List[NewsArticle]:
 
 # ==================== CONFLICT/GEOPOLITICAL SERVICE ====================
 
+# Country to coordinates mapping for GDELT events
+COUNTRY_COORDS = {
+    "Ukraine": {"lat": 48.3794, "lng": 31.1656},
+    "Russia": {"lat": 55.7558, "lng": 37.6173},
+    "Israel": {"lat": 31.0461, "lng": 34.8516},
+    "Palestine": {"lat": 31.9522, "lng": 35.2332},
+    "Gaza": {"lat": 31.5, "lng": 34.47},
+    "Iran": {"lat": 32.4279, "lng": 53.6880},
+    "Yemen": {"lat": 15.5527, "lng": 48.5164},
+    "Syria": {"lat": 34.8021, "lng": 38.9968},
+    "Taiwan": {"lat": 23.6978, "lng": 120.9605},
+    "China": {"lat": 35.8617, "lng": 104.1954},
+    "North Korea": {"lat": 40.3399, "lng": 127.5101},
+    "South Korea": {"lat": 35.9078, "lng": 127.7669},
+    "Philippines": {"lat": 12.8797, "lng": 121.7740},
+    "Myanmar": {"lat": 21.9162, "lng": 95.9560},
+    "Sudan": {"lat": 12.8628, "lng": 30.2176},
+    "Libya": {"lat": 26.3351, "lng": 17.2283},
+    "Lebanon": {"lat": 33.8547, "lng": 35.8623},
+    "Saudi Arabia": {"lat": 23.8859, "lng": 45.0792},
+    "Iraq": {"lat": 33.2232, "lng": 43.6793},
+    "Afghanistan": {"lat": 33.9391, "lng": 67.7100},
+    "Pakistan": {"lat": 30.3753, "lng": 69.3451},
+    "India": {"lat": 20.5937, "lng": 78.9629},
+    "Venezuela": {"lat": 6.4238, "lng": -66.5897},
+    "Mexico": {"lat": 23.6345, "lng": -102.5528},
+    "United States": {"lat": 37.0902, "lng": -95.7129},
+    "France": {"lat": 46.2276, "lng": 2.2137},
+    "Germany": {"lat": 51.1657, "lng": 10.4515},
+    "United Kingdom": {"lat": 55.3781, "lng": -3.4360},
+}
+
+# Event type mapping based on GDELT CAMEO codes
+GDELT_EVENT_TYPES = {
+    "PROTEST": "civil_unrest",
+    "FIGHT": "armed_conflict",
+    "ASSAULT": "armed_conflict",
+    "COERCE": "sanctions",
+    "THREATEN": "geopolitical_tension",
+    "DEMAND": "geopolitical_tension",
+    "DISAPPROVE": "diplomatic_tension",
+    "REDUCE_RELATIONS": "diplomatic_tension",
+    "MILITARY": "military_action",
+}
+
+# Country to affected assets mapping
+COUNTRY_AFFECTED_ASSETS = {
+    "Ukraine": ["ZW=F", "ZC=F", "NG=F", "EURUSD=X"],
+    "Russia": ["NG=F", "CL=F", "EURUSD=X", "GC=F"],
+    "Israel": ["CL=F", "GC=F", "XOM", "CVX"],
+    "Palestine": ["CL=F", "GC=F"],
+    "Gaza": ["CL=F", "GC=F"],
+    "Iran": ["CL=F", "BNO", "GC=F"],
+    "Yemen": ["CL=F", "MAERSK.CO", "ZIM"],
+    "Syria": ["CL=F", "GC=F"],
+    "Taiwan": ["TSM", "NVDA", "AMD", "INTC"],
+    "China": ["FXI", "BABA", "TSM", "AAPL"],
+    "North Korea": ["GC=F", "USDJPY=X"],
+    "South Korea": ["005930.KS", "USDJPY=X"],
+    "Philippines": ["FXI", "EWM"],
+    "Saudi Arabia": ["CL=F", "XOM", "CVX"],
+    "Venezuela": ["CL=F", "PBR"],
+}
+
+# Transmission channels by region/event type
+TRANSMISSION_CHANNELS = {
+    "armed_conflict": ["Energy", "Defense", "Safe Haven FX", "Agriculture"],
+    "sanctions": ["Finance", "Energy", "Trade"],
+    "geopolitical_tension": ["Trade", "Technology", "Defense"],
+    "civil_unrest": ["Consumer Goods", "Trade", "Finance"],
+    "shipping_chokepoint": ["Shipping", "Energy", "Consumer Goods"],
+    "diplomatic_tension": ["Trade", "Finance"],
+    "military_action": ["Energy", "Defense", "Safe Haven FX"],
+}
+
+async def fetch_gdelt_events() -> List[Dict[str, Any]]:
+    """Fetch events from GDELT API"""
+    try:
+        async with httpx.AsyncClient() as http_client:
+            # GDELT GKG (Global Knowledge Graph) API for recent events
+            # Query for conflict-related events in the last 24 hours
+            url = "https://api.gdeltproject.org/api/v2/doc/doc"
+            params = {
+                "query": "conflict OR war OR tension OR sanctions OR protest OR military",
+                "mode": "artlist",
+                "maxrecords": 50,
+                "format": "json",
+                "sort": "datedesc"
+            }
+            
+            response = await http_client.get(url, params=params, timeout=15.0)
+            
+            if response.status_code == 200:
+                data = response.json()
+                return data.get("articles", [])
+            else:
+                logger.warning(f"GDELT API returned status {response.status_code}")
+                return []
+    except Exception as e:
+        logger.error(f"Error fetching GDELT events: {e}")
+        return []
+
+def parse_gdelt_to_conflict(article: Dict[str, Any], index: int) -> Optional[ConflictEvent]:
+    """Parse a GDELT article into a ConflictEvent"""
+    try:
+        title = article.get("title", "")
+        url = article.get("url", "")
+        seendate = article.get("seendate", "")
+        source_country = article.get("sourcecountry", "")
+        domain = article.get("domain", "")
+        
+        # Try to identify the country from title or source
+        detected_country = None
+        for country in COUNTRY_COORDS.keys():
+            if country.lower() in title.lower():
+                detected_country = country
+                break
+        
+        if not detected_country:
+            detected_country = source_country if source_country in COUNTRY_COORDS else "Unknown"
+        
+        if detected_country == "Unknown":
+            return None
+        
+        # Determine event type from title
+        event_type = "geopolitical_tension"
+        title_lower = title.lower()
+        if any(word in title_lower for word in ["war", "attack", "strike", "bomb", "military", "combat"]):
+            event_type = "armed_conflict"
+        elif any(word in title_lower for word in ["sanction", "embargo", "restrict"]):
+            event_type = "sanctions"
+        elif any(word in title_lower for word in ["protest", "demonstration", "riot", "unrest"]):
+            event_type = "civil_unrest"
+        elif any(word in title_lower for word in ["tension", "threat", "warning", "escalate"]):
+            event_type = "geopolitical_tension"
+        elif any(word in title_lower for word in ["ship", "maritime", "naval", "sea"]):
+            event_type = "shipping_chokepoint"
+        
+        # Calculate severity based on keywords
+        severity = 5
+        if any(word in title_lower for word in ["war", "invasion", "attack"]):
+            severity = 8
+        elif any(word in title_lower for word in ["strike", "bomb", "missile"]):
+            severity = 7
+        elif any(word in title_lower for word in ["tension", "threat"]):
+            severity = 5
+        elif any(word in title_lower for word in ["protest", "demonstration"]):
+            severity = 4
+        
+        # Parse date
+        try:
+            if seendate:
+                event_date = datetime.strptime(seendate[:14], "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc)
+            else:
+                event_date = datetime.now(timezone.utc)
+        except:
+            event_date = datetime.now(timezone.utc)
+        
+        # Get coordinates
+        coords = COUNTRY_COORDS.get(detected_country, {"lat": 0, "lng": 0})
+        
+        # Get affected assets
+        affected_assets = COUNTRY_AFFECTED_ASSETS.get(detected_country, ["GC=F"])
+        
+        # Get transmission channels
+        channels = TRANSMISSION_CHANNELS.get(event_type, ["Trade", "Finance"])
+        
+        # Calculate impact score
+        impact_score = severity * 10 + len(affected_assets) * 2
+        
+        # Determine region
+        region_map = {
+            "Ukraine": "Eastern Europe", "Russia": "Eastern Europe",
+            "Israel": "Middle East", "Palestine": "Middle East", "Gaza": "Middle East",
+            "Iran": "Middle East", "Yemen": "Middle East", "Syria": "Middle East",
+            "Saudi Arabia": "Middle East", "Iraq": "Middle East", "Lebanon": "Middle East",
+            "Taiwan": "Asia Pacific", "China": "Asia Pacific", "North Korea": "Asia Pacific",
+            "South Korea": "Asia Pacific", "Philippines": "Southeast Asia", "Myanmar": "Southeast Asia",
+            "Afghanistan": "Central Asia", "Pakistan": "South Asia", "India": "South Asia",
+            "Sudan": "Africa", "Libya": "Africa",
+            "Venezuela": "South America", "Mexico": "North America",
+        }
+        region = region_map.get(detected_country, "Unknown")
+        
+        return ConflictEvent(
+            id=f"gdelt_{index}_{hash(title) % 100000}",
+            title=title[:200] if len(title) > 200 else title,
+            event_type=event_type,
+            location={"lat": coords["lat"], "lng": coords["lng"], "type": "point"},
+            country=detected_country,
+            region=region,
+            start_date=event_date,
+            status="ongoing",
+            severity=severity,
+            description=f"Source: {domain}. {title[:300]}",
+            sources=[domain, "GDELT"],
+            impact_score=min(impact_score, 100),
+            affected_assets=affected_assets[:5],
+            transmission_channels=channels[:4]
+        )
+    except Exception as e:
+        logger.error(f"Error parsing GDELT article: {e}")
+        return None
+
 async def fetch_conflicts() -> List[ConflictEvent]:
-    """Fetch geopolitical events (mock data for demo)"""
-    # In production, this would fetch from GDELT API
+    """Fetch geopolitical events from GDELT API with fallback to mock data"""
+    try:
+        # Fetch from GDELT
+        gdelt_articles = await fetch_gdelt_events()
+        
+        if gdelt_articles:
+            conflicts = []
+            seen_titles = set()
+            
+            for i, article in enumerate(gdelt_articles):
+                conflict = parse_gdelt_to_conflict(article, i)
+                if conflict and conflict.title not in seen_titles:
+                    seen_titles.add(conflict.title)
+                    conflicts.append(conflict)
+            
+            # Add some baseline persistent conflicts that are always relevant
+            baseline_conflicts = get_baseline_conflicts()
+            
+            # Merge: GDELT events first, then baseline conflicts not already covered
+            covered_countries = {c.country for c in conflicts}
+            for bc in baseline_conflicts:
+                if bc.country not in covered_countries:
+                    conflicts.append(bc)
+            
+            if conflicts:
+                logger.info(f"Returning {len(conflicts)} conflicts from GDELT + baseline")
+                return conflicts[:20]  # Limit to 20 events
+        
+        # Fallback to baseline if GDELT fails
+        logger.info("Using baseline conflicts (GDELT unavailable or no results)")
+        return get_baseline_conflicts()
+        
+    except Exception as e:
+        logger.error(f"Error in fetch_conflicts: {e}")
+        return get_baseline_conflicts()
+
+def get_baseline_conflicts() -> List[ConflictEvent]:
+    """Return baseline persistent conflicts"""
     return [
         ConflictEvent(
+            id="baseline_ukraine",
             title="Ukraine-Russia Conflict",
             event_type="armed_conflict",
             location={"lat": 48.3794, "lng": 31.1656, "type": "polygon"},
@@ -358,6 +599,7 @@ async def fetch_conflicts() -> List[ConflictEvent]:
             transmission_channels=["Energy", "Agriculture", "Defense", "Safe Haven FX"]
         ),
         ConflictEvent(
+            id="baseline_redsea",
             title="Red Sea Shipping Disruptions",
             event_type="shipping_chokepoint",
             location={"lat": 13.5, "lng": 42.5, "type": "point"},
@@ -373,6 +615,7 @@ async def fetch_conflicts() -> List[ConflictEvent]:
             transmission_channels=["Shipping", "Energy", "Consumer Goods"]
         ),
         ConflictEvent(
+            id="baseline_taiwan",
             title="Taiwan Strait Tensions",
             event_type="geopolitical_tension",
             location={"lat": 24.0, "lng": 121.0, "type": "polygon"},
@@ -388,7 +631,8 @@ async def fetch_conflicts() -> List[ConflictEvent]:
             transmission_channels=["Semiconductors", "Technology", "Defense"]
         ),
         ConflictEvent(
-            title="Iran Sanctions Escalation",
+            id="baseline_iran",
+            title="Iran Sanctions & Regional Tensions",
             event_type="sanctions",
             location={"lat": 32.4279, "lng": 53.6880, "type": "polygon"},
             country="Iran",
@@ -403,6 +647,7 @@ async def fetch_conflicts() -> List[ConflictEvent]:
             transmission_channels=["Energy", "Finance"]
         ),
         ConflictEvent(
+            id="baseline_southchinasea",
             title="South China Sea Disputes",
             event_type="territorial_dispute",
             location={"lat": 12.0, "lng": 114.0, "type": "polygon"},
