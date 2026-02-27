@@ -1819,7 +1819,7 @@ def get_earnings_for_symbol(symbol: str) -> Optional[EarningsEvent]:
         ticker = yf.Ticker(symbol)
         calendar = ticker.calendar
         
-        if calendar is None or calendar.empty:
+        if calendar is None:
             return None
         
         # Get company info
@@ -1828,14 +1828,35 @@ def get_earnings_for_symbol(symbol: str) -> Optional[EarningsEvent]:
         sector = info.get('sector')
         region = get_region(symbol)
         
-        # Extract earnings date
+        # Extract earnings date - handle both dict and DataFrame formats
         earnings_date = None
-        if 'Earnings Date' in calendar.index:
-            earnings_dates = calendar.loc['Earnings Date']
-            if isinstance(earnings_dates, pd.Series) and len(earnings_dates) > 0:
-                earnings_date = earnings_dates.iloc[0]
-            elif hasattr(earnings_dates, 'timestamp'):
-                earnings_date = earnings_dates
+        eps_estimate = None
+        revenue_estimate = None
+        
+        if isinstance(calendar, dict):
+            # New yfinance format - dict
+            if 'Earnings Date' in calendar:
+                ed = calendar['Earnings Date']
+                if isinstance(ed, list) and len(ed) > 0:
+                    earnings_date = ed[0]
+                elif ed:
+                    earnings_date = ed
+            if 'Earnings Average' in calendar:
+                eps_estimate = calendar.get('Earnings Average')
+            if 'Revenue Average' in calendar:
+                revenue_estimate = calendar.get('Revenue Average')
+        elif hasattr(calendar, 'empty') and not calendar.empty:
+            # Old yfinance format - DataFrame
+            if 'Earnings Date' in calendar.index:
+                earnings_dates = calendar.loc['Earnings Date']
+                if isinstance(earnings_dates, pd.Series) and len(earnings_dates) > 0:
+                    earnings_date = earnings_dates.iloc[0]
+                elif hasattr(earnings_dates, 'timestamp'):
+                    earnings_date = earnings_dates
+            if 'Earnings Average' in calendar.index:
+                eps_estimate = float(calendar.loc['Earnings Average'].iloc[0]) if not pd.isna(calendar.loc['Earnings Average'].iloc[0]) else None
+            if 'Revenue Average' in calendar.index:
+                revenue_estimate = float(calendar.loc['Revenue Average'].iloc[0]) if not pd.isna(calendar.loc['Revenue Average'].iloc[0]) else None
         
         if earnings_date is None:
             return None
@@ -1845,26 +1866,20 @@ def get_earnings_for_symbol(symbol: str) -> Optional[EarningsEvent]:
             earnings_date = earnings_date.to_pydatetime()
         elif isinstance(earnings_date, str):
             earnings_date = datetime.fromisoformat(earnings_date)
+        elif isinstance(earnings_date, (int, float)):
+            # Unix timestamp
+            earnings_date = datetime.fromtimestamp(earnings_date, tz=timezone.utc)
         
         # Ensure timezone aware
-        if earnings_date.tzinfo is None:
+        if hasattr(earnings_date, 'tzinfo') and earnings_date.tzinfo is None:
             earnings_date = earnings_date.replace(tzinfo=timezone.utc)
-        
-        # Extract estimates
-        eps_estimate = None
-        revenue_estimate = None
-        
-        if 'Earnings Average' in calendar.index:
-            eps_estimate = float(calendar.loc['Earnings Average'].iloc[0]) if not pd.isna(calendar.loc['Earnings Average'].iloc[0]) else None
-        if 'Revenue Average' in calendar.index:
-            revenue_estimate = float(calendar.loc['Revenue Average'].iloc[0]) if not pd.isna(calendar.loc['Revenue Average'].iloc[0]) else None
         
         return EarningsEvent(
             symbol=symbol,
             company_name=company_name,
             earnings_date=earnings_date,
-            eps_estimate=eps_estimate,
-            revenue_estimate=revenue_estimate,
+            eps_estimate=float(eps_estimate) if eps_estimate is not None else None,
+            revenue_estimate=float(revenue_estimate) if revenue_estimate is not None else None,
             region=region,
             sector=sector,
             time_of_day="unknown"
