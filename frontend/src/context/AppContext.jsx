@@ -130,9 +130,16 @@ export const AppProvider = ({ children }) => {
   // Screen assets
   const screenAssets = async (assetType, filters = {}) => {
     try {
-      const params = new URLSearchParams({ asset_type: assetType, ...filters });
+      // Only include defined, non-undefined filters
+      const cleanFilters = {};
+      Object.keys(filters).forEach(key => {
+        if (filters[key] !== undefined && filters[key] !== null) {
+          cleanFilters[key] = filters[key];
+        }
+      });
+      const params = new URLSearchParams({ asset_type: assetType, ...cleanFilters });
       const response = await axios.get(`${API}/screener?${params.toString()}`);
-      return response.data.results;
+      return response.data.results || [];
     } catch (error) {
       console.error('Error screening assets:', error);
       return [];
