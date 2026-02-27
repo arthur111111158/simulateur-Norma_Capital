@@ -134,7 +134,7 @@ export const AppProvider = ({ children }) => {
       // Only include defined, non-undefined filters
       const cleanFilters = {};
       Object.keys(filters).forEach(key => {
-        if (filters[key] !== undefined && filters[key] !== null) {
+        if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
           cleanFilters[key] = filters[key];
         }
       });
@@ -143,6 +143,52 @@ export const AppProvider = ({ children }) => {
       return response.data.results || [];
     } catch (error) {
       console.error('Error screening assets:', error);
+      return [];
+    }
+  };
+
+  // Get technical indicators
+  const getTechnicalIndicators = async (symbol) => {
+    try {
+      const response = await axios.get(`${API}/market/technical/${symbol}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching technical indicators:', error);
+      return null;
+    }
+  };
+
+  // Get impact score
+  const getImpactScore = async (symbol) => {
+    try {
+      const response = await axios.get(`${API}/impact/${symbol}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching impact score:', error);
+      return null;
+    }
+  };
+
+  // Get market universe
+  const fetchUniverse = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API}/market/universe`);
+      setUniverse(response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching universe:', error);
+      return null;
+    }
+  }, []);
+
+  // Get indices
+  const getIndices = async (region = null) => {
+    try {
+      const params = region ? `?region=${region}` : '';
+      const response = await axios.get(`${API}/market/indices${params}`);
+      return response.data.indices || [];
+    } catch (error) {
+      console.error('Error fetching indices:', error);
       return [];
     }
   };
