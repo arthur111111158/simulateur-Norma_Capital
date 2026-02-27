@@ -1382,6 +1382,7 @@ const WorldMapPage = () => {
                   </ScrollArea>
                 </CardContent>
               </Card>
+              )}
 
               {/* Risk Summary */}
               {shippingStats?.risk_summary && (
