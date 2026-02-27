@@ -27,7 +27,9 @@ import {
   Landmark,
   UserCircle,
   CandlestickChart,
-  LineChart as LineChartIcon
+  LineChart as LineChartIcon,
+  History,
+  X
 } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, 
