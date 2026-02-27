@@ -383,6 +383,9 @@ const WorldMapPage = () => {
               <Tabs value={activeLayer} onValueChange={setActiveLayer}>
                 <TabsList className="bg-zinc-900 h-8">
                   <TabsTrigger value="all" className="text-xs h-6 px-3" data-testid="layer-all">All</TabsTrigger>
+                  <TabsTrigger value="news" className="text-xs h-6 px-3" data-testid="layer-news">
+                    <Newspaper className="w-3 h-3 mr-1" />News
+                  </TabsTrigger>
                   <TabsTrigger value="maritime" className="text-xs h-6 px-3" data-testid="layer-maritime">
                     <Ship className="w-3 h-3 mr-1" />Maritime
                   </TabsTrigger>
