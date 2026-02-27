@@ -127,15 +127,17 @@ const QuotePage = () => {
       setSecondaryLoading(true);
       
       // Load secondary data in background
-      const [supplyChainData, shareholdersData, techData, impactData] = await Promise.all([
+      const [supplyChainData, shareholdersData, shareholdersHistoryData, techData, impactData] = await Promise.all([
         getSupplyChain(symbol),
         getShareholders(symbol),
+        getShareholdersHistory(symbol),
         getTechnicalIndicators(symbol),
         getImpactScore(symbol)
       ]);
       
       setSupplyChain(supplyChainData);
       setShareholders(shareholdersData);
+      setShareholdersHistory(shareholdersHistoryData);
       setTechnicals(techData);
       setImpactScore(impactData);
       setSecondaryLoading(false);
@@ -144,7 +146,7 @@ const QuotePage = () => {
     if (symbol && quote) {
       fetchSecondaryData();
     }
-  }, [symbol, quote, getSupplyChain, getShareholders, getTechnicalIndicators, getImpactScore]);
+  }, [symbol, quote, getSupplyChain, getShareholders, getShareholdersHistory, getTechnicalIndicators, getImpactScore]);
 
   // Handle search
   useEffect(() => {
