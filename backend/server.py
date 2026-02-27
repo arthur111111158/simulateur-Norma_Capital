@@ -1964,7 +1964,7 @@ def extract_tags(text: str) -> List[str]:
     return list(set(tags))
 
 def get_mock_news() -> List[NewsArticle]:
-    """Return mock news for demo purposes"""
+    """Return mock news for demo purposes - EN/FR only"""
     return [
         NewsArticle(
             title="Fed Signals Potential Rate Cuts Amid Economic Uncertainty",
@@ -1973,7 +1973,8 @@ def get_mock_news() -> List[NewsArticle]:
             source="Financial Times",
             published_at=datetime.now(timezone.utc) - timedelta(hours=1),
             tags=["MACRO", "FED", "RATES"],
-            sentiment="neutral"
+            sentiment="neutral",
+            language="en"
         ),
         NewsArticle(
             title="Oil Prices Surge on Middle East Tensions",
@@ -1982,7 +1983,8 @@ def get_mock_news() -> List[NewsArticle]:
             source="Reuters",
             published_at=datetime.now(timezone.utc) - timedelta(hours=2),
             tags=["OIL", "COMMODITY", "GEOPOLITICS"],
-            sentiment="negative"
+            sentiment="negative",
+            language="en"
         ),
         NewsArticle(
             title="Tech Giants Report Strong Q4 Earnings",
@@ -1991,7 +1993,18 @@ def get_mock_news() -> List[NewsArticle]:
             source="Bloomberg",
             published_at=datetime.now(timezone.utc) - timedelta(hours=3),
             tags=["AAPL", "MSFT", "GOOGL", "TECH"],
-            sentiment="positive"
+            sentiment="positive",
+            language="en"
+        ),
+        NewsArticle(
+            title="La BCE maintient ses taux directeurs inchangés",
+            description="La Banque centrale européenne a décidé de maintenir ses taux d'intérêt face à l'incertitude économique.",
+            url="https://example.com/news/4",
+            source="Les Echos",
+            published_at=datetime.now(timezone.utc) - timedelta(hours=4),
+            tags=["EUROPE", "ECB", "MACRO"],
+            sentiment="neutral",
+            language="fr"
         ),
         NewsArticle(
             title="European Markets Rally on ECB Stimulus Hopes",
@@ -2000,14 +2013,19 @@ def get_mock_news() -> List[NewsArticle]:
             source="MarketWatch",
             published_at=datetime.now(timezone.utc) - timedelta(hours=5),
             tags=["EUROPE", "ECB", "MACRO"],
-            sentiment="positive"
+            sentiment="positive",
+            language="en"
         ),
         NewsArticle(
-            title="Asian Markets Mixed as China Data Disappoints",
-            description="Shanghai and Hong Kong decline while Tokyo gains on yen weakness.",
+            title="Les marchés asiatiques en ordre dispersé",
+            description="Shanghai et Hong Kong reculent tandis que Tokyo progresse grâce à la faiblesse du yen.",
             url="https://example.com/news/6",
-            source="Nikkei Asia",
+            source="Le Figaro",
             published_at=datetime.now(timezone.utc) - timedelta(hours=6),
+            tags=["ASIA", "CHINA", "JAPAN"],
+            sentiment="neutral",
+            language="fr"
+        ),
             tags=["ASIA", "CHINA", "JAPAN"],
             sentiment="neutral"
         )
