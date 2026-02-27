@@ -354,6 +354,137 @@ const QuotePage = () => {
 
             {/* Right Column */}
             <div className="col-span-4 space-y-4">
+              {/* Technical Indicators */}
+              {technicals && (
+                <Card className="nexus-card">
+                  <CardHeader className="card-header-terminal">
+                    <CardTitle className="card-header-title flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-orange-500" />
+                      Technical Analysis
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-3">
+                    {/* Signal */}
+                    <div className="flex items-center justify-between mb-3 pb-3 border-b border-zinc-800">
+                      <div>
+                        <p className="text-[10px] text-zinc-500 uppercase">Signal</p>
+                        <Badge className={`mt-1 rounded-none ${
+                          technicals.signal === 'buy' ? 'bg-emerald-500/20 text-emerald-500' :
+                          technicals.signal === 'sell' ? 'bg-red-500/20 text-red-500' :
+                          'bg-zinc-500/20 text-zinc-400'
+                        }`}>
+                          {technicals.signal?.toUpperCase()}
+                        </Badge>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] text-zinc-500 uppercase">Trend</p>
+                        <span className={`text-sm font-medium ${
+                          technicals.trend === 'bullish' ? 'text-emerald-500' :
+                          technicals.trend === 'bearish' ? 'text-red-500' :
+                          'text-zinc-400'
+                        }`}>
+                          {technicals.trend?.charAt(0).toUpperCase() + technicals.trend?.slice(1)}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Key Indicators */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="p-2 bg-zinc-900/50 rounded-sm">
+                        <p className="text-[9px] text-zinc-500">RSI (14)</p>
+                        <p className={`font-mono text-sm ${
+                          technicals.rsi_14 > 70 ? 'text-red-500' :
+                          technicals.rsi_14 < 30 ? 'text-emerald-500' :
+                          'text-white'
+                        }`}>
+                          {technicals.rsi_14?.toFixed(1) || '—'}
+                        </p>
+                      </div>
+                      <div className="p-2 bg-zinc-900/50 rounded-sm">
+                        <p className="text-[9px] text-zinc-500">MACD</p>
+                        <p className={`font-mono text-sm ${
+                          technicals.macd > 0 ? 'text-emerald-500' : 'text-red-500'
+                        }`}>
+                          {technicals.macd?.toFixed(2) || '—'}
+                        </p>
+                      </div>
+                      <div className="p-2 bg-zinc-900/50 rounded-sm">
+                        <p className="text-[9px] text-zinc-500">SMA 20</p>
+                        <p className="font-mono text-sm text-white">{technicals.sma_20?.toFixed(2) || '—'}</p>
+                      </div>
+                      <div className="p-2 bg-zinc-900/50 rounded-sm">
+                        <p className="text-[9px] text-zinc-500">SMA 50</p>
+                        <p className="font-mono text-sm text-white">{technicals.sma_50?.toFixed(2) || '—'}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Bollinger Bands */}
+                    <div className="mt-2 p-2 bg-zinc-900/50 rounded-sm">
+                      <p className="text-[9px] text-zinc-500 mb-1">Bollinger Bands</p>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-red-400">{technicals.bollinger_lower?.toFixed(2)}</span>
+                        <span className="text-zinc-400">{technicals.bollinger_middle?.toFixed(2)}</span>
+                        <span className="text-emerald-400">{technicals.bollinger_upper?.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Impact Score */}
+              {impactScore && (
+                <Card className="nexus-card">
+                  <CardHeader className="card-header-terminal">
+                    <CardTitle className="card-header-title flex items-center gap-2">
+                      <Target className="w-4 h-4 text-orange-500" />
+                      Impact Score
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-center">
+                        <span className={`font-mono text-3xl ${
+                          impactScore.risk_level === 'critical' ? 'text-red-500' :
+                          impactScore.risk_level === 'high' ? 'text-orange-500' :
+                          impactScore.risk_level === 'medium' ? 'text-yellow-500' :
+                          'text-emerald-500'
+                        }`}>
+                          {impactScore.score?.toFixed(0)}
+                        </span>
+                        <p className="text-[10px] text-zinc-500 uppercase">/ 100</p>
+                      </div>
+                      <Badge className={`rounded-none ${
+                        impactScore.risk_level === 'critical' ? 'badge-critical' :
+                        impactScore.risk_level === 'high' ? 'badge-high' :
+                        impactScore.risk_level === 'medium' ? 'badge-medium' :
+                        'badge-low'
+                      }`}>
+                        {impactScore.risk_level?.toUpperCase()}
+                      </Badge>
+                    </div>
+                    
+                    {impactScore.factors?.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-[10px] text-zinc-500 uppercase">Risk Factors</p>
+                        {impactScore.factors.map((factor, i) => (
+                          <div key={i} className="flex items-center gap-2 text-xs">
+                            <AlertTriangle className={`w-3 h-3 ${
+                              factor.impact > 0 ? 'text-red-500' : 'text-emerald-500'
+                            }`} />
+                            <span className="text-zinc-400 flex-1">{factor.description}</span>
+                            <span className={`font-mono ${
+                              factor.impact > 0 ? 'text-red-500' : 'text-emerald-500'
+                            }`}>
+                              {factor.impact > 0 ? '+' : ''}{factor.impact}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Supply Chain Preview */}
               {supplyChain.length > 0 && (
                 <Card className="nexus-card">
