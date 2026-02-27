@@ -1814,31 +1814,31 @@ def get_historical_data(symbol: str, period: str = "1mo", interval: str = "1d") 
 
 # ==================== NEWS SERVICE WITH MONGODB CACHE ====================
 
-async def get_cached_news(query: str = None, max_age_hours: int = 1) -> List[Dict]:
+async def get_cached_news(cache_key: str, max_age_hours: int = 1) -> List[Dict]:
     """Get news from MongoDB cache if fresh"""
     try:
-        cache_key = f"news_{query or 'general'}"
+        full_cache_key = f"news_{cache_key}"
         cutoff = datetime.now(timezone.utc) - timedelta(hours=max_age_hours)
         
         cached = await db.news_cache.find_one({
-            "cache_key": cache_key,
+            "cache_key": full_cache_key,
             "cached_at": {"$gte": cutoff}
         })
         
         if cached and cached.get("articles"):
-            logger.info(f"News cache hit for {cache_key}")
+            logger.info(f"News cache hit for {full_cache_key}")
             return cached["articles"]
         return []
     except Exception as e:
         logger.error(f"Error reading news cache: {e}")
         return []
 
-async def cache_news(query: str, articles: List[Dict]):
+async def cache_news(cache_key: str, articles: List[Dict]):
     """Save news to MongoDB cache"""
     try:
-        cache_key = f"news_{query or 'general'}"
+        full_cache_key = f"news_{cache_key}"
         await db.news_cache.update_one(
-            {"cache_key": cache_key},
+            {"cache_key": full_cache_key},
             {
                 "$set": {
                     "articles": articles,
@@ -1847,7 +1847,7 @@ async def cache_news(query: str, articles: List[Dict]):
             },
             upsert=True
         )
-        logger.info(f"Cached {len(articles)} news articles for {cache_key}")
+        logger.info(f"Cached {len(articles)} news articles for {full_cache_key}")
     except Exception as e:
         logger.error(f"Error caching news: {e}")
 
