@@ -12,6 +12,8 @@ from datetime import datetime, timezone, timedelta
 import yfinance as yf
 import httpx
 import asyncio
+import numpy as np
+from enum import Enum
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
