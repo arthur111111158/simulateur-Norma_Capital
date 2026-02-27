@@ -820,56 +820,63 @@ const QuotePage = () => {
                         <div className="flex gap-4">
                           {/* Pie Chart */}
                           <div className="w-[180px] h-[180px] flex-shrink-0">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <PieChart>
-                                <Pie
-                                  data={(() => {
-                                    const COLORS = {
-                                      family: '#a855f7',      // Purple
-                                      government: '#3b82f6',  // Blue
-                                      institutional: '#f59e0b', // Amber
-                                      corporate: '#22c55e',   // Green
-                                      mutual_fund: '#06b6d4', // Cyan
-                                      insider: '#ec4899',     // Pink
-                                      other: '#71717a'        // Gray
-                                    };
-                                    const holders = shareholders.major_holders?.length > 0 
-                                      ? shareholders.major_holders 
-                                      : shareholders.institutional_holders;
-                                    const topHolders = holders?.slice(0, 5) || [];
-                                    const topTotal = topHolders.reduce((sum, h) => sum + (h.percent_held || 0), 0);
-                                    const othersPercent = Math.max(0, 100 - topTotal);
-                                    
-                                    const data = topHolders.map((h, i) => ({
-                                      name: h.name?.split(' ')[0] || `Holder ${i+1}`,
-                                      value: h.percent_held || 0,
-                                      type: h.holder_type,
-                                      fill: COLORS[h.holder_type] || COLORS.institutional
-                                    }));
-                                    
-                                    if (othersPercent > 0) {
-                                      data.push({ name: 'Others/Float', value: othersPercent, type: 'other', fill: COLORS.other });
-                                    }
-                                    return data;
-                                  })()}
-                                  cx="50%"
-                                  cy="50%"
-                                  innerRadius={35}
-                                  outerRadius={70}
-                                  paddingAngle={2}
-                                  dataKey="value"
-                                />
-                                <Tooltip 
-                                  formatter={(value) => [`${value.toFixed(1)}%`, '']}
-                                  contentStyle={{ 
-                                    backgroundColor: '#18181b', 
-                                    border: '1px solid #3f3f46',
-                                    borderRadius: '4px',
-                                    fontSize: '11px'
-                                  }}
-                                />
-                              </PieChart>
-                            </ResponsiveContainer>
+                            {(() => {
+                              const COLORS = {
+                                family: '#a855f7',      // Purple
+                                government: '#3b82f6',  // Blue
+                                institutional: '#f59e0b', // Amber
+                                corporate: '#22c55e',   // Green
+                                mutual_fund: '#06b6d4', // Cyan
+                                insider: '#ec4899',     // Pink
+                                other: '#71717a'        // Gray
+                              };
+                              const holders = shareholders.major_holders?.length > 0 
+                                ? shareholders.major_holders 
+                                : shareholders.institutional_holders;
+                              const topHolders = holders?.slice(0, 5) || [];
+                              const topTotal = topHolders.reduce((sum, h) => sum + (h.percent_held || 0), 0);
+                              const othersPercent = Math.max(0, 100 - topTotal);
+                              
+                              const pieData = topHolders.map((h, i) => ({
+                                name: h.name?.split(' ')[0] || `Holder ${i+1}`,
+                                value: h.percent_held || 0,
+                                type: h.holder_type,
+                                color: COLORS[h.holder_type] || COLORS.institutional
+                              }));
+                              
+                              if (othersPercent > 0) {
+                                pieData.push({ name: 'Others/Float', value: othersPercent, type: 'other', color: COLORS.other });
+                              }
+                              
+                              return (
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <PieChart>
+                                    <Pie
+                                      data={pieData}
+                                      cx="50%"
+                                      cy="50%"
+                                      innerRadius={35}
+                                      outerRadius={70}
+                                      paddingAngle={2}
+                                      dataKey="value"
+                                    >
+                                      {pieData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                      ))}
+                                    </Pie>
+                                    <Tooltip 
+                                      formatter={(value) => [`${value.toFixed(1)}%`, '']}
+                                      contentStyle={{ 
+                                        backgroundColor: '#18181b', 
+                                        border: '1px solid #3f3f46',
+                                        borderRadius: '4px',
+                                        fontSize: '11px'
+                                      }}
+                                    />
+                                  </PieChart>
+                                </ResponsiveContainer>
+                              );
+                            })()}
                           </div>
                           
                           {/* Holders List */}
