@@ -37,7 +37,11 @@ import {
   ZoomOut,
   RotateCcw,
   Newspaper,
-  TrendingUp as Trending
+  TrendingUp as Trending,
+  Banknote,
+  ArrowRightLeft,
+  Landmark,
+  CircleDollarSign
 } from 'lucide-react';
 
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
