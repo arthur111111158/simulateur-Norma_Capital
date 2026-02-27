@@ -1944,7 +1944,6 @@ def get_supply_chain_from_yfinance(symbol: str) -> List[SupplyChainNode]:
         
         # Get sector peers as potential partners/competitors
         sector = info.get('sector', '')
-        industry = info.get('industry', '')
         
         # Create synthetic supply chain based on sector
         sector_suppliers = {
