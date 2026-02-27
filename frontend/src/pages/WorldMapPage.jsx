@@ -503,11 +503,17 @@ const WorldMapPage = () => {
                   projection="geoMercator"
                   projectionConfig={{
                     scale: 150,
-                    center: [20, 20]
+                    center: [0, 20]
                   }}
                   style={{ width: '100%', height: '100%' }}
                 >
-                  <ZoomableGroup zoom={zoom} onMoveEnd={({ zoom: z }) => setZoom(z)}>
+                  <ZoomableGroup 
+                    zoom={zoom} 
+                    center={center}
+                    onMoveEnd={handleMoveEnd}
+                    minZoom={1}
+                    maxZoom={8}
+                  >
                     <Geographies geography={geoUrl}>
                       {({ geographies }) =>
                         geographies.map((geo) => {
