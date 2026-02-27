@@ -3079,6 +3079,253 @@ async def get_shipping_stats_api():
         }
     }
 
+# ==================== COMMODITIES ROUTES ====================
+
+@api_router.get("/commodities")
+async def get_all_commodities():
+    """Get all commodities with current prices"""
+    results = []
+    
+    for symbol, info in COMMODITIES.items():
+        quote = get_yahoo_quote(symbol)
+        if quote:
+            results.append({
+                "symbol": symbol,
+                "name": info["name"],
+                "category": info["type"],
+                "price": quote.price,
+                "change": quote.change,
+                "change_percent": quote.change_percent,
+                "high": quote.high,
+                "low": quote.low,
+                "open": quote.open,
+                "previous_close": quote.previous_close,
+                "currency": quote.currency,
+                "timestamp": quote.timestamp.isoformat()
+            })
+    
+    # Group by category
+    categories = {}
+    for item in results:
+        cat = item["category"]
+        if cat not in categories:
+            categories[cat] = []
+        categories[cat].append(item)
+    
+    return {
+        "commodities": results,
+        "by_category": categories,
+        "categories": list(categories.keys()),
+        "total": len(results)
+    }
+
+@api_router.get("/commodities/category/{category}")
+async def get_commodities_by_category(category: str):
+    """Get commodities by category"""
+    results = []
+    
+    for symbol, info in COMMODITIES.items():
+        if info["type"].lower() == category.lower():
+            quote = get_yahoo_quote(symbol)
+            if quote:
+                results.append({
+                    "symbol": symbol,
+                    "name": info["name"],
+                    "category": info["type"],
+                    "price": quote.price,
+                    "change": quote.change,
+                    "change_percent": quote.change_percent,
+                    "currency": quote.currency
+                })
+    
+    return {"commodities": results, "category": category, "total": len(results)}
+
+# ==================== FOREX ROUTES ====================
+
+@api_router.get("/forex/pairs")
+async def get_all_forex_pairs():
+    """Get all forex pairs with current rates"""
+    results = []
+    
+    for symbol, info in FOREX_PAIRS.items():
+        quote = get_yahoo_quote(symbol)
+        if quote:
+            results.append({
+                "symbol": symbol,
+                "name": info["name"],
+                "base": info["base"],
+                "quote": info["quote"],
+                "rate": quote.price,
+                "change": quote.change,
+                "change_percent": quote.change_percent,
+                "bid": quote.bid,
+                "ask": quote.ask,
+                "high": quote.high,
+                "low": quote.low,
+                "timestamp": quote.timestamp.isoformat()
+            })
+    
+    # Group by base currency
+    by_base = {}
+    for item in results:
+        base = item["base"]
+        if base not in by_base:
+            by_base[base] = []
+        by_base[base].append(item)
+    
+    return {
+        "pairs": results,
+        "by_base_currency": by_base,
+        "total": len(results)
+    }
+
+@api_router.get("/forex/currencies")
+async def get_currencies():
+    """Get list of available currencies"""
+    return {
+        "currencies": [
+            {"code": code, **info} for code, info in CURRENCIES.items()
+        ],
+        "total": len(CURRENCIES)
+    }
+
+@api_router.get("/forex/rate/{base}/{quote}")
+async def get_forex_rate(base: str, quote: str):
+    """Get exchange rate between two currencies"""
+    base = base.upper()
+    quote_curr = quote.upper()
+    
+    # Try direct pair
+    symbol = f"{base}{quote_curr}=X"
+    if symbol in FOREX_PAIRS:
+        ticker = yf.Ticker(symbol)
+        info = ticker.info
+        rate = info.get('regularMarketPrice', info.get('ask', 0))
+        return {
+            "base": base,
+            "quote": quote_curr,
+            "rate": rate,
+            "symbol": symbol,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    
+    # Try inverse pair
+    inverse_symbol = f"{quote_curr}{base}=X"
+    if inverse_symbol in FOREX_PAIRS:
+        ticker = yf.Ticker(inverse_symbol)
+        info = ticker.info
+        rate = info.get('regularMarketPrice', info.get('ask', 0))
+        if rate > 0:
+            return {
+                "base": base,
+                "quote": quote_curr,
+                "rate": 1 / rate,
+                "symbol": inverse_symbol,
+                "inverse": True,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+    
+    # Try via USD cross
+    try:
+        base_to_usd = 1.0
+        usd_to_quote = 1.0
+        
+        if base != "USD":
+            # Get base to USD
+            base_usd_symbol = f"{base}USD=X"
+            usd_base_symbol = f"USD{base}=X"
+            
+            if base_usd_symbol in FOREX_PAIRS or True:
+                ticker = yf.Ticker(base_usd_symbol)
+                info = ticker.info
+                base_to_usd = info.get('regularMarketPrice', info.get('ask', 0))
+                if base_to_usd == 0:
+                    ticker = yf.Ticker(usd_base_symbol)
+                    info = ticker.info
+                    rate = info.get('regularMarketPrice', info.get('ask', 0))
+                    if rate > 0:
+                        base_to_usd = 1 / rate
+        
+        if quote_curr != "USD":
+            # Get USD to quote
+            usd_quote_symbol = f"USD{quote_curr}=X"
+            ticker = yf.Ticker(usd_quote_symbol)
+            info = ticker.info
+            usd_to_quote = info.get('regularMarketPrice', info.get('ask', 0))
+        
+        if base_to_usd > 0 and usd_to_quote > 0:
+            cross_rate = base_to_usd * usd_to_quote
+            return {
+                "base": base,
+                "quote": quote_curr,
+                "rate": cross_rate,
+                "cross_via": "USD",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+    except Exception as e:
+        logger.error(f"Error calculating cross rate: {e}")
+    
+    raise HTTPException(status_code=404, detail=f"Exchange rate not found for {base}/{quote_curr}")
+
+@api_router.post("/forex/convert")
+async def convert_currency(
+    amount: float = Query(..., description="Amount to convert"),
+    from_currency: str = Query(..., description="Source currency code"),
+    to_currencies: str = Query(..., description="Target currency codes, comma-separated")
+):
+    """Convert amount from one currency to multiple currencies"""
+    from_curr = from_currency.upper()
+    to_list = [c.strip().upper() for c in to_currencies.split(",")]
+    
+    results = []
+    
+    for to_curr in to_list:
+        if to_curr == from_curr:
+            results.append({
+                "from": from_curr,
+                "to": to_curr,
+                "amount": amount,
+                "converted": amount,
+                "rate": 1.0
+            })
+            continue
+        
+        try:
+            # Get rate
+            rate_data = await get_forex_rate(from_curr, to_curr)
+            rate = rate_data.get("rate", 0)
+            
+            if rate > 0:
+                converted = amount * rate
+                results.append({
+                    "from": from_curr,
+                    "to": to_curr,
+                    "amount": amount,
+                    "converted": converted,
+                    "rate": rate,
+                    "currency_info": CURRENCIES.get(to_curr, {})
+                })
+        except Exception as e:
+            logger.error(f"Error converting {from_curr} to {to_curr}: {e}")
+            results.append({
+                "from": from_curr,
+                "to": to_curr,
+                "amount": amount,
+                "converted": None,
+                "rate": None,
+                "error": str(e)
+            })
+    
+    return {
+        "source": {
+            "currency": from_curr,
+            "amount": amount,
+            "currency_info": CURRENCIES.get(from_curr, {})
+        },
+        "conversions": results,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
 # ==================== COUNTRY DATA ROUTES ====================
 
 @api_router.get("/country/{country_code}")
