@@ -170,7 +170,8 @@ Air Liquide, Airbus, Alstom, Atos, AXA, BNP Paribas, Bouygues, Bureau Veritas, C
 
 ### Analysis
 - `GET /api/impact/{symbol}` - Dynamic impact score
-- `GET /api/supplychain/{symbol}` - Company supply chain
+- `GET /api/supplychain/{symbol}` - Company supply chain (enhanced with French companies data)
+- `GET /api/shareholders/{symbol}` - Major shareholders, insiders %, institutions %
 
 ### WebSocket
 - `WS /ws/quotes` - Real-time quote updates (with polling fallback)
