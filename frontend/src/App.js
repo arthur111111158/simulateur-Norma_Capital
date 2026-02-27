@@ -9,6 +9,7 @@ import WorldMapPage from "./pages/WorldMapPage";
 import SupplyChainPage from "./pages/SupplyChainPage";
 import ScreenerPage from "./pages/ScreenerPage";
 import SettingsPage from "./pages/SettingsPage";
+import EarningsPage from "./pages/EarningsPage";
 import { Toaster } from "./components/ui/sonner";
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
             <Route path="/worldmap" element={<WorldMapPage />} />
             <Route path="/supplychain" element={<SupplyChainPage />} />
             <Route path="/screener" element={<ScreenerPage />} />
+            <Route path="/earnings" element={<EarningsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </Layout>
