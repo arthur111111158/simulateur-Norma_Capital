@@ -912,18 +912,70 @@ const WorldMapPage = () => {
                   </div>
                 )}
 
+                {/* Financial Flow Hover Tooltip */}
+                {hoveredFlow && !selectedFlow && (
+                  <div className="absolute top-4 left-4 bg-zinc-900/95 border border-emerald-500/30 rounded-sm p-3 max-w-xs z-10">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Banknote className="w-4 h-4 text-emerald-500" />
+                      <h4 className="text-sm font-medium text-white">{hoveredFlow.description}</h4>
+                    </div>
+                    <div className="flex items-center gap-3 mt-2 text-xs">
+                      <span className="text-emerald-400 font-mono">${hoveredFlow.volume}B</span>
+                      <Badge className={`text-[10px] rounded-none ${
+                        hoveredFlow.type === 'fdi' ? 'bg-emerald-500/20 text-emerald-400' :
+                        hoveredFlow.type === 'portfolio' ? 'bg-blue-500/20 text-blue-400' :
+                        hoveredFlow.type === 'wealth' ? 'bg-amber-500/20 text-amber-400' :
+                        'bg-purple-500/20 text-purple-400'
+                      }`}>
+                        {hoveredFlow.type.toUpperCase()}
+                      </Badge>
+                      <Badge className={`text-[10px] rounded-none ${
+                        hoveredFlow.trend === 'increasing' ? 'bg-emerald-500/20 text-emerald-400' :
+                        hoveredFlow.trend === 'decreasing' ? 'bg-red-500/20 text-red-400' :
+                        'bg-zinc-500/20 text-zinc-400'
+                      }`}>
+                        {hoveredFlow.trend === 'increasing' ? '↑' : hoveredFlow.trend === 'decreasing' ? '↓' : '→'} {hoveredFlow.trend}
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+
                 {/* Legend */}
                 <div className="absolute bottom-4 left-4 bg-zinc-900/90 border border-zinc-800 rounded-sm p-2 text-[10px]">
                   <p className="text-zinc-400 mb-2 font-medium">Legend</p>
                   <div className="space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-0.5 bg-blue-500"></div>
-                      <span className="text-zinc-400">Maritime Route</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-0.5 bg-purple-500 border-dashed" style={{borderTop: '2px dashed #8b5cf6'}}></div>
-                      <span className="text-zinc-400">Air Cargo Route</span>
-                    </div>
+                    {(activeLayer === 'all' || activeLayer === 'finance') && (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-emerald-500 rounded-sm"></div>
+                          <span className="text-zinc-400">Financial Center</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-0.5 bg-emerald-500"></div>
+                          <span className="text-zinc-400">FDI Flow</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-0.5 bg-blue-500"></div>
+                          <span className="text-zinc-400">Portfolio Flow</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-0.5 bg-amber-500"></div>
+                          <span className="text-zinc-400">Wealth Flow</span>
+                        </div>
+                      </>
+                    )}
+                    {(activeLayer === 'all' || activeLayer === 'maritime' || activeLayer === 'air') && (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-0.5 bg-cyan-500"></div>
+                          <span className="text-zinc-400">Maritime Route</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-0.5 bg-purple-500 border-dashed" style={{borderTop: '2px dashed #8b5cf6'}}></div>
+                          <span className="text-zinc-400">Air Cargo Route</span>
+                        </div>
+                      </>
+                    )}
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-0.5 bg-red-500"></div>
                       <span className="text-zinc-400">Disrupted Route</span>
