@@ -54,6 +54,13 @@ const CustomNode = ({ data }) => {
       className={`px-3 py-2 rounded-sm border-2 ${getRiskColor(data.risk)} bg-zinc-900 min-w-[180px] cursor-pointer hover:border-opacity-100 transition-all`}
       data-testid={`node-${data.id}`}
     >
+      {/* Left handle for incoming connections */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        style={{ background: '#3f3f46', border: '2px solid #52525b' }}
+      />
+      
       <div className="flex items-center gap-2">
         <Icon className="w-4 h-4 text-zinc-400" />
         <div className="flex-1 min-w-0">
@@ -83,6 +90,13 @@ const CustomNode = ({ data }) => {
           <p className="text-[9px] text-zinc-500 mt-0.5">{data.dependency}% dependency</p>
         </div>
       )}
+      
+      {/* Right handle for outgoing connections */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        style={{ background: '#3f3f46', border: '2px solid #52525b' }}
+      />
     </div>
   );
 };
