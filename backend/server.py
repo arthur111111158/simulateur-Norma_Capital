@@ -1881,17 +1881,20 @@ async def fetch_news(query: str = None, country: str = None, category: str = Non
                     params['q'] = query
                     url = 'https://newsapi.org/v2/everything'
                 else:
-                    url = 'https://newsapi.org/v2/top-headlines'
-                    # NewsAPI requires country OR sources for top-headlines
-                    # Use country code matching language for better results
-                    if country:
-                        params['country'] = country
-                    elif lang == 'fr':
-                        params['country'] = 'fr'  # French news from France
-                    elif lang == 'en':
-                        params['country'] = 'us'  # English news from US by default
-                    if category:
-                        params['category'] = category
+                    # For French news without query, use /everything with a broad finance query
+                    # because /top-headlines doesn't return French content reliably
+                    if lang == 'fr':
+                        url = 'https://newsapi.org/v2/everything'
+                        params['q'] = 'économie OR finance OR bourse OR marché'  # French finance keywords
+                        params['sortBy'] = 'publishedAt'
+                    else:
+                        url = 'https://newsapi.org/v2/top-headlines'
+                        if country:
+                            params['country'] = country
+                        else:
+                            params['country'] = 'us'  # English news from US by default
+                        if category:
+                            params['category'] = category
                 
                 try:
                     response = await http_client.get(url, params=params, timeout=10.0)
