@@ -256,6 +256,7 @@ Air Liquide, Airbus, Alstom, Atos, AXA, BNP Paribas, Bouygues, Bureau Veritas, C
 - [x] **Shareholders History** (quarterly changes)
 
 ### P1 - High Priority (Next)
+- [ ] Screener filters by country/index (CAC 40, DAX, FTSE, etc.)
 - [ ] Real-time shipping data via AIS API (MarineTraffic/VesselFinder)
 - [ ] User authentication (JWT/OAuth)
 - [ ] Price alerts system with notifications
