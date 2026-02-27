@@ -51,22 +51,26 @@ const QuotePage = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const [quoteData, historyData, supplyChainData] = await Promise.all([
+      const [quoteData, historyData, supplyChainData, techData, impactData] = await Promise.all([
         getQuote(symbol),
         getHistory(symbol, period, interval),
-        getSupplyChain(symbol)
+        getSupplyChain(symbol),
+        getTechnicalIndicators(symbol),
+        getImpactScore(symbol)
       ]);
       
       setQuote(quoteData);
       setHistory(historyData);
       setSupplyChain(supplyChainData);
+      setTechnicals(techData);
+      setImpactScore(impactData);
       setLoading(false);
     };
     
     if (symbol) {
       fetchData();
     }
-  }, [symbol, period, interval, getQuote, getHistory, getSupplyChain]);
+  }, [symbol, period, interval, getQuote, getHistory, getSupplyChain, getTechnicalIndicators, getImpactScore]);
 
   // Handle search
   useEffect(() => {
