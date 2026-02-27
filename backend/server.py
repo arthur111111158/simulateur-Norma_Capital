@@ -2619,6 +2619,58 @@ async def get_earnings_for_symbol_route(symbol: str):
         raise HTTPException(status_code=404, detail=f"No earnings data available for {symbol}")
     return event.model_dump()
 
+# ==================== SHIPPING ROUTES ====================
+
+@api_router.get("/shipping/routes")
+async def get_shipping_routes_api(
+    route_type: str = Query("all", description="Route type: all, maritime, air")
+):
+    """Get global shipping routes with disruption analysis"""
+    # Get current conflicts for disruption calculation
+    conflicts_data = await get_cached_conflicts()
+    conflicts_list = [c.model_dump() if hasattr(c, 'model_dump') else c for c in conflicts_data]
+    
+    routes = get_shipping_routes(route_type, conflicts_list)
+    stats = get_shipping_stats(routes)
+    
+    return {
+        "routes": [r.model_dump() for r in routes],
+        "stats": stats.model_dump()
+    }
+
+@api_router.get("/shipping/ports")
+async def get_shipping_ports_api():
+    """Get all major ports and airports"""
+    ports = get_all_ports()
+    return {
+        "seaports": [p.model_dump() for p in ports["seaports"]],
+        "airports": [p.model_dump() for p in ports["airports"]],
+        "total_seaports": len(ports["seaports"]),
+        "total_airports": len(ports["airports"])
+    }
+
+@api_router.get("/shipping/stats")
+async def get_shipping_stats_api():
+    """Get shipping statistics and risk summary"""
+    conflicts_data = await get_cached_conflicts()
+    conflicts_list = [c.model_dump() if hasattr(c, 'model_dump') else c for c in conflicts_data]
+    
+    routes = get_shipping_routes("all", conflicts_list)
+    stats = get_shipping_stats(routes)
+    
+    # Calculate additional risk metrics
+    affected_routes = [r for r in routes if r.disruption_level > 0]
+    
+    return {
+        "stats": stats.model_dump(),
+        "risk_summary": {
+            "high_risk_routes": len([r for r in affected_routes if r.disruption_level > 0.5]),
+            "medium_risk_routes": len([r for r in affected_routes if 0.2 < r.disruption_level <= 0.5]),
+            "low_risk_routes": len([r for r in affected_routes if r.disruption_level <= 0.2]),
+            "critical_chokepoints": list(set([cp for r in routes for cp in r.chokepoints if r.disruption_level > 0.3]))
+        }
+    }
+
 # ==================== WEBSOCKET ROUTE ====================
 
 @app.websocket("/ws/quotes")
