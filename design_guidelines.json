@@ -1,0 +1,153 @@
+{
+  "brand": {
+    "name": "NEXUS TERMINAL",
+    "description": "Professional-grade financial intelligence platform unifying multi-asset market data, geopolitical risk analysis, and supply chain visibility.",
+    "emotional_tone": "Authoritative, Precise, Urgent, Global, Institutional",
+    "visual_style": "Cyber-Capitalist / Modern Bloomberg / High-Density Data",
+    "theme_mode": "dark"
+  },
+  "typography": {
+    "primary": {
+      "name": "Inter",
+      "usage": "UI Labels, Navigation, Headings",
+      "weights": ["400", "500", "600"],
+      "class": "font-sans"
+    },
+    "mono": {
+      "name": "JetBrains Mono",
+      "usage": "Tickers, Prices, Data Tables, Timestamp",
+      "weights": ["400", "500"],
+      "class": "font-mono"
+    },
+    "headings": {
+      "h1": "text-3xl font-semibold tracking-tight text-white",
+      "h2": "text-xl font-medium tracking-tight text-zinc-100",
+      "h3": "text-sm font-semibold uppercase tracking-wider text-zinc-400"
+    }
+  },
+  "colors": {
+    "background": {
+      "base": "#09090b",
+      "surface": "#121212",
+      "card": "#18181b",
+      "highlight": "#27272a"
+    },
+    "text": {
+      "primary": "#fafafa",
+      "secondary": "#a1a1aa",
+      "muted": "#52525b",
+      "data": "#ffffff"
+    },
+    "accents": {
+      "primary": "#f97316",
+      "secondary": "#3b82f6",
+      "success": "#22c55e",
+      "danger": "#ef4444",
+      "warning": "#eab308",
+      "info": "#0ea5e9"
+    },
+    "borders": {
+      "default": "#27272a",
+      "active": "#3f3f46"
+    }
+  },
+  "layout_strategy": {
+    "type": "Bento Grid / Mosaic",
+    "container_padding": "p-4 md:p-6",
+    "grid_gap": "gap-2 md:gap-4",
+    "card_style": "bg-card border border-border rounded-none shadow-sm",
+    "density": "high"
+  },
+  "components": {
+    "Card": {
+      "path": "@/components/ui/card",
+      "style": "rounded-sm border-zinc-800 bg-zinc-950/50 backdrop-blur-sm",
+      "instructions": "Use rounded-sm or rounded-none. Add a subtle 1px border. No large shadows."
+    },
+    "Button": {
+      "path": "@/components/ui/button",
+      "style": "rounded-sm font-medium tracking-wide uppercase text-xs",
+      "variants": {
+        "default": "bg-orange-500 hover:bg-orange-600 text-white",
+        "outline": "border-zinc-700 text-zinc-300 hover:bg-zinc-800",
+        "ghost": "hover:bg-zinc-800 hover:text-white"
+      }
+    },
+    "Input": {
+      "path": "@/components/ui/input",
+      "style": "bg-zinc-900 border-zinc-800 focus:ring-orange-500/50 rounded-sm font-mono text-sm"
+    },
+    "Badge": {
+      "path": "@/components/ui/badge",
+      "style": "rounded-none px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wider"
+    },
+    "Table": {
+      "path": "@/components/ui/table",
+      "style": "text-xs font-mono",
+      "header_style": "text-zinc-500 uppercase tracking-wider font-semibold"
+    }
+  },
+  "specialized_visualizations": {
+    "charts": {
+      "library": "recharts",
+      "style": "minimal",
+      "grid": "stroke-zinc-800 stroke-dasharray-3-3",
+      "tooltip": "bg-zinc-900 border-zinc-700 text-xs font-mono"
+    },
+    "world_map": {
+      "library": "react-simple-maps",
+      "style": "fill-zinc-800 stroke-zinc-900 hover:fill-zinc-700",
+      "markers": "custom SVG markers for conflict/supply chain events"
+    },
+    "supply_chain": {
+      "library": "reactflow",
+      "node_style": "bg-zinc-900 border-zinc-700 rounded-sm text-xs w-48"
+    }
+  },
+  "image_urls": {
+    "login_bg": {
+      "url": "https://images.unsplash.com/photo-1771873680097-7506773a2b02?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwyfHxkaWdpdGFsJTIwYWJzdHJhY3QlMjBzdG9jayUyMG1hcmtldCUyMGRhdGElMjBncmlkJTIwZGFyayUyMGJsdWUlMjBvcmFuZ2V8ZW58MHx8fHwxNzcyMjEzMzA3fDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Digital Market Grid",
+      "category": "background"
+    },
+    "supply_chain_hero": {
+      "url": "https://images.unsplash.com/photo-1759283842351-b1e041bd0949?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDB8MHwxfHNlYXJjaHwxfHxzdG9jayUyMG1hcmtldCUyMGRhdGElMjBjZW50ZXIlMjBkYXJrJTIwY29udGFpbmVyJTIwc2hpcCUyMHBvcnQlMjBuaWdodCUyMGdvbGQlMjBiYXJzJTIwZGFyayUyMGNpbmVtYXRpYyUyMG9pbCUyMHJlZmluZXJ5JTIwbmlnaHR8ZW58MHx8fHwxNzcyMjEzMzAwfDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Port at Night",
+      "category": "hero"
+    }
+  },
+  "universal_guidelines": {
+    "layout_rules": [
+      "Use 'Bento Grid' layouts (grid-cols-12) for dashboards.",
+      "Maximize screen real estate. Use minimal padding (p-1 or p-2) inside data widgets.",
+      "Always use a fixed Sidebar or Topbar for navigation to mimic terminal apps.",
+      "Use 'Card' components with 'rounded-sm' or 'rounded-none' for a technical look."
+    ],
+    "visual_rules": [
+      "No gradients for backgrounds unless it's a subtle radial glow for highlighting.",
+      "Use 1px borders (border-zinc-800) to separate sections. Clarity is key.",
+      "Positive numbers in Green (#22c55e), Negative in Red (#ef4444). Neutral in White.",
+      "Use JetBrains Mono for ALL numeric data.",
+      "Skeleton loaders must be dark zinc (#27272a)."
+    ],
+    "interaction_rules": [
+      "Hover effects should be instant (duration-75 or duration-100).",
+      "Active states should have a high-contrast border or text color change.",
+      "Tooltips are mandatory for icons."
+    ],
+    "accessibility": [
+      "Ensure text contrast ratio is at least 4.5:1 against the dark background.",
+      "Do not rely on color alone for status (add icons or text labels)."
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Install 'lucide-react' for icons.",
+    "Install 'recharts' for charts.",
+    "Install 'react-simple-maps' for the World Conflict Map.",
+    "Install 'reactflow' for the Supply Chain Graph.",
+    "Use 'date-fns' for date formatting.",
+    "Update 'tailwind.config.js' to include the custom colors (Zinc-950, Orange-500).",
+    "Create a 'Layout' component that wraps the app with the Sidebar and Topbar.",
+    "Implement a 'ThemeToggle' but force Dark Mode by default."
+  ]
+}
