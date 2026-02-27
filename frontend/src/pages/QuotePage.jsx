@@ -553,6 +553,45 @@ const QuotePage = () => {
                 </Card>
               )}
 
+              {/* Shareholders / Major Holders */}
+              {shareholders && (shareholders.major_holders?.length > 0 || shareholders.institutional_holders?.length > 0) && (
+                <Card className="nexus-card">
+                  <CardHeader className="card-header-terminal">
+                    <CardTitle className="card-header-title flex items-center gap-2">
+                      <Users className="w-4 h-4 text-orange-500" />
+                      Major Shareholders
+                    </CardTitle>
+                    <div className="flex gap-2 text-[10px]">
+                      <span className="text-zinc-400">Insiders: <span className="text-cyan-400">{shareholders.insiders_percent?.toFixed(1)}%</span></span>
+                      <span className="text-zinc-400">Institutions: <span className="text-amber-400">{shareholders.institutions_percent?.toFixed(1)}%</span></span>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-2">
+                    <ScrollArea className="h-[200px]">
+                      {(shareholders.major_holders?.length > 0 ? shareholders.major_holders : shareholders.institutional_holders)?.slice(0, 10).map((holder, i) => (
+                        <div key={i} className="flex items-center justify-between py-2 px-2 hover:bg-zinc-800/30 rounded-sm border-b border-zinc-800/50 last:border-0">
+                          <div className="flex items-center gap-2">
+                            {holder.holder_type === 'family' && <UserCircle className="w-4 h-4 text-purple-400" />}
+                            {holder.holder_type === 'government' && <Landmark className="w-4 h-4 text-blue-400" />}
+                            {holder.holder_type === 'institutional' && <Building2 className="w-4 h-4 text-amber-400" />}
+                            {holder.holder_type === 'corporate' && <Building2 className="w-4 h-4 text-green-400" />}
+                            {holder.holder_type === 'mutual_fund' && <BarChart2 className="w-4 h-4 text-cyan-400" />}
+                            <div>
+                              <span className="text-sm text-white">{holder.name}</span>
+                              {holder.country && <p className="text-[10px] text-zinc-500">{holder.country}</p>}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-sm font-mono text-amber-400">{holder.percent_held?.toFixed(2)}%</span>
+                            <p className="text-[10px] text-zinc-500 capitalize">{holder.holder_type?.replace('_', ' ')}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Related News */}
               <Card className="nexus-card">
                 <CardHeader className="card-header-terminal">
