@@ -859,9 +859,6 @@ const QuotePage = () => {
                                   paddingAngle={2}
                                   dataKey="value"
                                 />
-                                    ));
-                                  })()}
-                                </Pie>
                                 <Tooltip 
                                   formatter={(value) => [`${value.toFixed(1)}%`, '']}
                                   contentStyle={{ 
