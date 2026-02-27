@@ -1454,6 +1454,100 @@ const WorldMapPage = () => {
           {/* Default: Routes List or Risk Summary */}
           {!selectedCountry && !selectedRoute && !selectedConflict && (
             <>
+              {/* Financial Flows Panel - shown when Finance layer is active */}
+              {activeLayer === 'finance' && (
+                <Card className="nexus-card border-emerald-500/30">
+                  <CardHeader className="card-header-terminal">
+                    <CardTitle className="card-header-title flex items-center gap-2">
+                      <Banknote className="w-4 h-4 text-emerald-500" />
+                      Capital Flows
+                    </CardTitle>
+                    <Badge className="bg-emerald-500/20 text-emerald-400 rounded-none text-[10px]">
+                      ${capitalFlows.reduce((sum, f) => sum + f.volume, 0)}B total
+                    </Badge>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    {/* Financial Centers Summary */}
+                    <div className="p-3 border-b border-zinc-800">
+                      <p className="text-[10px] text-zinc-500 uppercase mb-2">Major Financial Centers</p>
+                      <div className="flex flex-wrap gap-1">
+                        {financialCenters.filter(c => c.type === 'major').map((center, i) => (
+                          <Badge 
+                            key={i}
+                            className="bg-emerald-500/20 text-emerald-400 rounded-none text-[10px] cursor-pointer hover:bg-emerald-500/30"
+                            onClick={() => zoomToLocation(center.coords, 4)}
+                          >
+                            {center.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <ScrollArea className="h-[260px]">
+                      {capitalFlows.sort((a, b) => b.volume - a.volume).map((flow, i) => {
+                        const fromCenter = financialCenters.find(c => c.id === flow.from);
+                        const toCenter = financialCenters.find(c => c.id === flow.to);
+                        return (
+                          <div
+                            key={flow.id}
+                            className={`p-3 border-b border-zinc-800/50 hover:bg-zinc-800/30 cursor-pointer ${
+                              selectedFlow?.id === flow.id ? 'bg-emerald-500/10' : ''
+                            }`}
+                            onClick={() => setSelectedFlow(flow)}
+                            onMouseEnter={() => setHoveredFlow(flow)}
+                            onMouseLeave={() => setHoveredFlow(null)}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={`w-10 h-10 rounded-sm flex items-center justify-center flex-shrink-0 ${
+                                flow.type === 'fdi' ? 'bg-emerald-500/20 border-emerald-500/30' :
+                                flow.type === 'portfolio' ? 'bg-blue-500/20 border-blue-500/30' :
+                                flow.type === 'wealth' ? 'bg-amber-500/20 border-amber-500/30' :
+                                'bg-purple-500/20 border-purple-500/30'
+                              } border`}>
+                                <span className={`font-mono text-sm ${
+                                  flow.type === 'fdi' ? 'text-emerald-400' :
+                                  flow.type === 'portfolio' ? 'text-blue-400' :
+                                  flow.type === 'wealth' ? 'text-amber-400' :
+                                  'text-purple-400'
+                                }`}>${flow.volume}B</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1 text-sm text-white">
+                                  <span>{fromCenter?.name}</span>
+                                  <ArrowRightLeft className="w-3 h-3 text-zinc-500" />
+                                  <span>{toCenter?.name}</span>
+                                </div>
+                                <p className="text-[10px] text-zinc-500 mt-0.5 truncate">{flow.description}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Badge className={`text-[9px] px-1 py-0 h-4 rounded-none ${
+                                    flow.type === 'fdi' ? 'bg-emerald-500/20 text-emerald-400' :
+                                    flow.type === 'portfolio' ? 'bg-blue-500/20 text-blue-400' :
+                                    flow.type === 'wealth' ? 'bg-amber-500/20 text-amber-400' :
+                                    'bg-purple-500/20 text-purple-400'
+                                  }`}>
+                                    {flow.type.toUpperCase()}
+                                  </Badge>
+                                  {flow.trend === 'increasing' && (
+                                    <span className="text-[10px] text-emerald-400 flex items-center gap-0.5">
+                                      <TrendingUp className="w-3 h-3" /> Growing
+                                    </span>
+                                  )}
+                                  {flow.trend === 'decreasing' && (
+                                    <span className="text-[10px] text-red-400 flex items-center gap-0.5">
+                                      <TrendingDown className="w-3 h-3" /> Declining
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-zinc-600 flex-shrink-0" />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* News Hotspots Panel - shown when News layer is active */}
               {activeLayer === 'news' && newsHotspots.length > 0 && (
                 <Card className="nexus-card border-amber-500/30">
