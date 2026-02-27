@@ -385,21 +385,38 @@ const ConflictsWidget = () => {
   );
 };
 
-// Quick stats widget
+// Quick stats widget - Global indices
 const QuickStatsWidget = () => {
   const [indices, setIndices] = useState([]);
   const { getQuote } = useApp();
 
   useEffect(() => {
     const fetchIndices = async () => {
-      const symbols = ['^GSPC', '^DJI', '^IXIC', 'GC=F', 'CL=F', 'EURUSD=X'];
-      const names = ['S&P 500', 'Dow Jones', 'NASDAQ', 'Gold', 'Oil', 'EUR/USD'];
+      // Global indices: US, Europe, Asia
+      const symbols = [
+        '^GSPC', '^DJI', '^IXIC',      // US
+        '^FCHI', '^GDAXI', '^FTSE',     // Europe
+        '^N225', '^HSI', '000001.SS',   // Asia
+        'GC=F', 'CL=F', 'EURUSD=X'      // Commodities & Forex
+      ];
+      const names = [
+        'S&P 500', 'Dow Jones', 'NASDAQ',
+        'CAC 40', 'DAX', 'FTSE 100',
+        'Nikkei', 'Hang Seng', 'Shanghai',
+        'Gold', 'Oil', 'EUR/USD'
+      ];
+      const regions = [
+        'US', 'US', 'US',
+        'EU', 'EU', 'EU',
+        'Asia', 'Asia', 'Asia',
+        '', '', ''
+      ];
       
       const data = [];
       for (let i = 0; i < symbols.length; i++) {
         const quote = await getQuote(symbols[i]);
         if (quote) {
-          data.push({ ...quote, displayName: names[i] });
+          data.push({ ...quote, displayName: names[i], region: regions[i] });
         }
       }
       setIndices(data);
@@ -407,28 +424,48 @@ const QuickStatsWidget = () => {
     fetchIndices();
   }, [getQuote]);
 
+  // Group by category
+  const usIndices = indices.slice(0, 3);
+  const euIndices = indices.slice(3, 6);
+  const asiaIndices = indices.slice(6, 9);
+  const commodities = indices.slice(9);
+
+  const renderGroup = (items, title, flag) => (
+    <div className="space-y-1">
+      <p className="text-[10px] text-zinc-600 uppercase flex items-center gap-1">
+        <span>{flag}</span> {title}
+      </p>
+      <div className="grid grid-cols-3 gap-1">
+        {items.map((index, i) => {
+          const isPositive = index.change >= 0;
+          return (
+            <div key={i} className="text-center p-1.5 bg-zinc-900/50 rounded-sm">
+              <p className="text-[9px] text-zinc-500 uppercase truncate">{index.displayName}</p>
+              <p className="font-mono text-xs text-white">{index.price?.toFixed(2)}</p>
+              <p className={`font-mono text-[10px] ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
+                {isPositive ? '+' : ''}{index.change_percent?.toFixed(2)}%
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   return (
     <Card className="nexus-card">
       <CardHeader className="card-header-terminal py-1.5">
         <CardTitle className="card-header-title flex items-center gap-2">
           <BarChart3 className="w-4 h-4 text-orange-500" />
-          Markets Overview
+          Global Markets Overview
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-2">
-        <div className="grid grid-cols-6 gap-2">
-          {indices.map((index, i) => {
-            const isPositive = index.change >= 0;
-            return (
-              <div key={i} className="text-center p-2 bg-zinc-900/50 rounded-sm">
-                <p className="text-[10px] text-zinc-500 uppercase truncate">{index.displayName}</p>
-                <p className="font-mono text-sm text-white">{index.price?.toFixed(2)}</p>
-                <p className={`font-mono text-xs ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
-                  {isPositive ? '+' : ''}{index.change_percent?.toFixed(2)}%
-                </p>
-              </div>
-            );
-          })}
+      <CardContent className="p-3">
+        <div className="grid grid-cols-4 gap-3">
+          {renderGroup(usIndices, 'United States', '🇺🇸')}
+          {renderGroup(euIndices, 'Europe', '🇪🇺')}
+          {renderGroup(asiaIndices, 'Asia', '🌏')}
+          {renderGroup(commodities, 'Commodities & FX', '📊')}
         </div>
       </CardContent>
     </Card>
