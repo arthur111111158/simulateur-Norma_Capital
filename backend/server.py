@@ -1365,7 +1365,14 @@ def get_supply_chain(symbol: str) -> List[SupplyChainNode]:
         ],
     }
     
-    return supply_chains.get(symbol.upper(), [])
+    # First try static data
+    static_chain = supply_chains.get(symbol.upper(), [])
+    
+    # If no static data, try to get from yfinance
+    if not static_chain:
+        return get_supply_chain_from_yfinance(symbol)
+    
+    return static_chain
 
 # ==================== IMPACT SCORING SERVICE ====================
 
