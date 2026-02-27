@@ -782,6 +782,85 @@ const WorldMapPage = () => {
                         </g>
                       </Marker>
                     ))}
+
+                    {/* Financial Flow Lines */}
+                    {(activeLayer === 'all' || activeLayer === 'finance') && capitalFlows.map((flow, i) => {
+                      const fromCoords = getFlowCoords(flow.from);
+                      const toCoords = getFlowCoords(flow.to);
+                      const isHovered = hoveredFlow?.id === flow.id;
+                      const isSelected = selectedFlow?.id === flow.id;
+                      
+                      // Color based on flow type
+                      const flowColor = flow.type === 'fdi' ? '#10b981' : // green for FDI
+                                       flow.type === 'portfolio' ? '#3b82f6' : // blue for portfolio
+                                       flow.type === 'wealth' ? '#f59e0b' : // amber for wealth
+                                       flow.type === 'remittance' ? '#8b5cf6' : // purple for remittance
+                                       '#06b6d4'; // cyan for commodity
+                      
+                      // Line width based on volume (normalized)
+                      const strokeWidth = Math.max(1, Math.min(flow.volume / 100, 4));
+                      
+                      return (
+                        <Line
+                          key={`flow-${flow.id}`}
+                          from={fromCoords}
+                          to={toCoords}
+                          stroke={flowColor}
+                          strokeWidth={isHovered || isSelected ? strokeWidth + 1 : strokeWidth}
+                          strokeOpacity={isHovered || isSelected ? 0.9 : 0.5}
+                          strokeLinecap="round"
+                          strokeDasharray={flow.trend === 'decreasing' ? '4,4' : 'none'}
+                          style={{ cursor: 'pointer' }}
+                          onMouseEnter={() => setHoveredFlow(flow)}
+                          onMouseLeave={() => setHoveredFlow(null)}
+                          onClick={() => setSelectedFlow(flow)}
+                        />
+                      );
+                    })}
+
+                    {/* Financial Centers Markers */}
+                    {(activeLayer === 'all' || activeLayer === 'finance') && financialCenters.map((center, i) => (
+                      <Marker key={`fc-${center.id}`} coordinates={center.coords}>
+                        <g 
+                          transform="translate(-8, -8)"
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => zoomToLocation(center.coords, 4)}
+                        >
+                          {/* Glow effect for major centers */}
+                          {center.type === 'major' && (
+                            <circle
+                              cx="8"
+                              cy="8"
+                              r={12}
+                              fill="#10b981"
+                              opacity={0.2}
+                            />
+                          )}
+                          {/* Main marker */}
+                          <rect
+                            x="2"
+                            y="2"
+                            width={center.type === 'major' ? 12 : 10}
+                            height={center.type === 'major' ? 12 : 10}
+                            fill={center.type === 'major' ? '#10b981' : center.type === 'regional' ? '#3b82f6' : '#f59e0b'}
+                            stroke="#09090b"
+                            strokeWidth={1}
+                            rx={2}
+                          />
+                          {/* Dollar sign */}
+                          <text
+                            x="8"
+                            y="12"
+                            textAnchor="middle"
+                            fill="#fff"
+                            fontSize="8"
+                            fontWeight="bold"
+                          >
+                            $
+                          </text>
+                        </g>
+                      </Marker>
+                    ))}
                   </ZoomableGroup>
                 </ComposableMap>
 
