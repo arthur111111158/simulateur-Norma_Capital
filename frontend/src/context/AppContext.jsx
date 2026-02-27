@@ -264,6 +264,78 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // ==================== NEW: COMMODITIES ====================
+  
+  // Get all commodities
+  const getCommodities = async () => {
+    try {
+      const response = await axios.get(`${API}/commodities`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching commodities:', error);
+      return { commodities: [], by_category: {}, categories: [] };
+    }
+  };
+
+  // Get commodities by category
+  const getCommoditiesByCategory = async (category) => {
+    try {
+      const response = await axios.get(`${API}/commodities/category/${category}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching commodities by category:', error);
+      return { commodities: [] };
+    }
+  };
+
+  // ==================== NEW: FOREX ====================
+  
+  // Get all forex pairs
+  const getForexPairs = async () => {
+    try {
+      const response = await axios.get(`${API}/forex/pairs`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching forex pairs:', error);
+      return { pairs: [], by_base_currency: {} };
+    }
+  };
+
+  // Get currencies list
+  const getCurrencies = async () => {
+    try {
+      const response = await axios.get(`${API}/forex/currencies`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching currencies:', error);
+      return { currencies: [] };
+    }
+  };
+
+  // Get forex rate
+  const getForexRate = async (base, quote) => {
+    try {
+      const response = await axios.get(`${API}/forex/rate/${base}/${quote}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching forex rate:', error);
+      return null;
+    }
+  };
+
+  // Convert currency
+  const convertCurrency = async (amount, fromCurrency, toCurrencies) => {
+    try {
+      const response = await axios.post(
+        `${API}/forex/convert?amount=${amount}&from_currency=${fromCurrency}&to_currencies=${toCurrencies.join(',')}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error converting currency:', error);
+      return null;
+    }
+  };
+
   // ==================== NEW: OPTIONS CHAIN ====================
   
   // Get options expirations
