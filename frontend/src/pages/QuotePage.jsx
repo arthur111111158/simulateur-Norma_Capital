@@ -580,6 +580,13 @@ const QuotePage = () => {
               </Card>
             </div>
           </div>
+
+          {/* Options Chain Section - Full Width */}
+          {quote?.asset_type === 'stock' && (
+            <div className="mt-4">
+              <OptionsChain symbol={symbol} />
+            </div>
+          )}
         </>
       )}
     </div>
