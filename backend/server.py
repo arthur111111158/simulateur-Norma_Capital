@@ -2180,23 +2180,27 @@ def parse_gdelt_geo_to_conflict(feature: Dict[str, Any], index: int) -> Optional
         lat = coords[1] if len(coords) > 1 else COUNTRY_COORDS.get(country_name, {}).get("lat", 0)
         lng = coords[0] if coords else COUNTRY_COORDS.get(country_name, {}).get("lng", 0)
         
-        title_match = re.search(r'title="([^"]+)"', html_content)
-        if title_match:
-            title = title_match.group(1)[:150]
-        else:
-            title = f"Geopolitical Activity in {country_name}"
-        
+        # Determine event type and severity from content
         severity = min(9, max(4, event_count // 200 + 4))
-        
         event_type = "geopolitical_tension"
-        content_lower = (title + html_content).lower()
-        if any(word in content_lower for word in ["war", "attack", "strike", "bomb", "military", "combat"]):
+        content_lower = html_content.lower()
+        
+        if any(word in content_lower for word in ["war", "attack", "strike", "bomb", "military", "combat", "fighting"]):
             event_type = "armed_conflict"
             severity = min(9, severity + 1)
         elif any(word in content_lower for word in ["sanction", "embargo", "restrict"]):
             event_type = "sanctions"
         elif any(word in content_lower for word in ["protest", "demonstration", "riot"]):
             event_type = "civil_unrest"
+        
+        # Generate English/French title based on event type and country
+        title_templates = {
+            "armed_conflict": f"Armed conflict reported in {country_name}",
+            "sanctions": f"Economic sanctions affecting {country_name}",
+            "civil_unrest": f"Civil unrest in {country_name}",
+            "geopolitical_tension": f"Geopolitical tensions in {country_name}",
+        }
+        title = title_templates.get(event_type, f"Geopolitical activity in {country_name}")
         
         affected_assets = COUNTRY_AFFECTED_ASSETS.get(country_name, ["GC=F"])
         channels = TRANSMISSION_CHANNELS.get(event_type, ["Trade", "Finance"])
@@ -2225,7 +2229,7 @@ def parse_gdelt_geo_to_conflict(feature: Dict[str, Any], index: int) -> Optional
             start_date=datetime.now(timezone.utc) - timedelta(hours=index),
             status="ongoing",
             severity=severity,
-            description=f"GDELT reports {event_count} related events. {title[:200]}",
+            description=f"GDELT reports {event_count} related events in {country_name}.",
             sources=["GDELT", "Multiple News Sources"],
             impact_score=impact_score,
             affected_assets=affected_assets[:5],
