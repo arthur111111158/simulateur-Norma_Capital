@@ -414,25 +414,27 @@ TRANSMISSION_CHANNELS = {
 }
 
 async def fetch_gdelt_events() -> List[Dict[str, Any]]:
-    """Fetch events from GDELT API"""
+    """Fetch events from GDELT GEO API"""
     try:
         async with httpx.AsyncClient() as http_client:
-            # GDELT GKG (Global Knowledge Graph) API for recent events
-            # Query for conflict-related events in the last 24 hours
-            url = "https://api.gdeltproject.org/api/v2/doc/doc"
+            # GDELT GEO API for geopolitical events with location data
+            url = "https://api.gdeltproject.org/api/v2/geo/geo"
             params = {
-                "query": "conflict OR war OR tension OR sanctions OR protest OR military",
-                "mode": "artlist",
-                "maxrecords": 50,
-                "format": "json",
-                "sort": "datedesc"
+                "query": "war conflict tension military sanctions protest",
+                "format": "geojson"
             }
             
             response = await http_client.get(url, params=params, timeout=15.0)
             
             if response.status_code == 200:
-                data = response.json()
-                return data.get("articles", [])
+                try:
+                    data = response.json()
+                    features = data.get("features", [])
+                    logger.info(f"GDELT returned {len(features)} geo features")
+                    return features
+                except Exception as parse_error:
+                    logger.warning(f"GDELT JSON parse error: {parse_error}")
+                    return []
             else:
                 logger.warning(f"GDELT API returned status {response.status_code}")
                 return []
@@ -440,73 +442,62 @@ async def fetch_gdelt_events() -> List[Dict[str, Any]]:
         logger.error(f"Error fetching GDELT events: {e}")
         return []
 
-def parse_gdelt_to_conflict(article: Dict[str, Any], index: int) -> Optional[ConflictEvent]:
-    """Parse a GDELT article into a ConflictEvent"""
+def parse_gdelt_geo_to_conflict(feature: Dict[str, Any], index: int) -> Optional[ConflictEvent]:
+    """Parse a GDELT GEO feature into a ConflictEvent"""
     try:
-        title = article.get("title", "")
-        url = article.get("url", "")
-        seendate = article.get("seendate", "")
-        source_country = article.get("sourcecountry", "")
-        domain = article.get("domain", "")
+        properties = feature.get("properties", {})
+        geometry = feature.get("geometry", {})
         
-        # Try to identify the country from title or source
-        detected_country = None
-        for country in COUNTRY_COORDS.keys():
-            if country.lower() in title.lower():
-                detected_country = country
-                break
+        country_name = properties.get("name", "")
+        event_count = properties.get("count", 0)
+        html_content = properties.get("html", "")
         
-        if not detected_country:
-            detected_country = source_country if source_country in COUNTRY_COORDS else "Unknown"
-        
-        if detected_country == "Unknown":
+        # Skip if country not recognized
+        if country_name not in COUNTRY_COORDS and country_name not in [
+            "Afghanistan", "Pakistan", "India", "China", "Russia", "Ukraine", 
+            "Israel", "Iran", "Syria", "Yemen", "Iraq", "Lebanon", "Gaza",
+            "Taiwan", "North Korea", "South Korea", "Myanmar", "Philippines",
+            "Sudan", "Libya", "Venezuela", "Mexico"
+        ]:
             return None
         
-        # Determine event type from title
+        # Get coordinates from GeoJSON or fallback
+        coords = geometry.get("coordinates", [0, 0])
+        lat = coords[1] if len(coords) > 1 else COUNTRY_COORDS.get(country_name, {}).get("lat", 0)
+        lng = coords[0] if coords else COUNTRY_COORDS.get(country_name, {}).get("lng", 0)
+        
+        # Extract title from HTML if available
+        import re
+        title_match = re.search(r'title="([^"]+)"', html_content)
+        if title_match:
+            title = title_match.group(1)[:150]
+        else:
+            title = f"Geopolitical Activity in {country_name}"
+        
+        # Determine severity based on event count
+        severity = min(9, max(4, event_count // 200 + 4))
+        
+        # Determine event type from title/content
         event_type = "geopolitical_tension"
-        title_lower = title.lower()
-        if any(word in title_lower for word in ["war", "attack", "strike", "bomb", "military", "combat"]):
+        content_lower = (title + html_content).lower()
+        if any(word in content_lower for word in ["war", "attack", "strike", "bomb", "military", "combat", "savaş"]):
             event_type = "armed_conflict"
-        elif any(word in title_lower for word in ["sanction", "embargo", "restrict"]):
+            severity = min(9, severity + 1)
+        elif any(word in content_lower for word in ["sanction", "embargo", "restrict"]):
             event_type = "sanctions"
-        elif any(word in title_lower for word in ["protest", "demonstration", "riot", "unrest"]):
+        elif any(word in content_lower for word in ["protest", "demonstration", "riot"]):
             event_type = "civil_unrest"
-        elif any(word in title_lower for word in ["tension", "threat", "warning", "escalate"]):
+        elif any(word in content_lower for word in ["tension", "threat", "warning"]):
             event_type = "geopolitical_tension"
-        elif any(word in title_lower for word in ["ship", "maritime", "naval", "sea"]):
-            event_type = "shipping_chokepoint"
-        
-        # Calculate severity based on keywords
-        severity = 5
-        if any(word in title_lower for word in ["war", "invasion", "attack"]):
-            severity = 8
-        elif any(word in title_lower for word in ["strike", "bomb", "missile"]):
-            severity = 7
-        elif any(word in title_lower for word in ["tension", "threat"]):
-            severity = 5
-        elif any(word in title_lower for word in ["protest", "demonstration"]):
-            severity = 4
-        
-        # Parse date
-        try:
-            if seendate:
-                event_date = datetime.strptime(seendate[:14], "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc)
-            else:
-                event_date = datetime.now(timezone.utc)
-        except:
-            event_date = datetime.now(timezone.utc)
-        
-        # Get coordinates
-        coords = COUNTRY_COORDS.get(detected_country, {"lat": 0, "lng": 0})
         
         # Get affected assets
-        affected_assets = COUNTRY_AFFECTED_ASSETS.get(detected_country, ["GC=F"])
+        affected_assets = COUNTRY_AFFECTED_ASSETS.get(country_name, ["GC=F"])
         
         # Get transmission channels
         channels = TRANSMISSION_CHANNELS.get(event_type, ["Trade", "Finance"])
         
         # Calculate impact score
-        impact_score = severity * 10 + len(affected_assets) * 2
+        impact_score = min(95, severity * 8 + len(affected_assets) * 3 + event_count // 100)
         
         # Determine region
         region_map = {
@@ -520,26 +511,26 @@ def parse_gdelt_to_conflict(article: Dict[str, Any], index: int) -> Optional[Con
             "Sudan": "Africa", "Libya": "Africa",
             "Venezuela": "South America", "Mexico": "North America",
         }
-        region = region_map.get(detected_country, "Unknown")
+        region = region_map.get(country_name, "Unknown")
         
         return ConflictEvent(
-            id=f"gdelt_{index}_{hash(title) % 100000}",
-            title=title[:200] if len(title) > 200 else title,
+            id=f"gdelt_geo_{index}_{hash(country_name) % 100000}",
+            title=title,
             event_type=event_type,
-            location={"lat": coords["lat"], "lng": coords["lng"], "type": "point"},
-            country=detected_country,
+            location={"lat": lat, "lng": lng, "type": "point"},
+            country=country_name,
             region=region,
-            start_date=event_date,
+            start_date=datetime.now(timezone.utc) - timedelta(hours=index),
             status="ongoing",
             severity=severity,
-            description=f"Source: {domain}. {title[:300]}",
-            sources=[domain, "GDELT"],
-            impact_score=min(impact_score, 100),
+            description=f"GDELT reports {event_count} related events. {title[:200]}",
+            sources=["GDELT", "Multiple News Sources"],
+            impact_score=impact_score,
             affected_assets=affected_assets[:5],
             transmission_channels=channels[:4]
         )
     except Exception as e:
-        logger.error(f"Error parsing GDELT article: {e}")
+        logger.error(f"Error parsing GDELT geo feature: {e}")
         return None
 
 async def fetch_conflicts() -> List[ConflictEvent]:
