@@ -1850,10 +1850,15 @@ async def cache_news(query: str, articles: List[Dict]):
     except Exception as e:
         logger.error(f"Error caching news: {e}")
 
-async def fetch_news(query: str = None, country: str = None, category: str = None, page_size: int = 20) -> List[NewsArticle]:
-    """Fetch news from cache or NewsAPI"""
+async def fetch_news(query: str = None, country: str = None, category: str = None, page_size: int = 20, languages: List[str] = None) -> List[NewsArticle]:
+    """Fetch news from cache or NewsAPI - supports EN and FR languages"""
+    # Default to both English and French
+    if languages is None:
+        languages = ['en', 'fr']
+    
     # Check cache first
-    cached = await get_cached_news(query)
+    cache_key = f"{query or 'general'}_{','.join(languages)}"
+    cached = await get_cached_news(cache_key)
     if cached:
         return [NewsArticle(**a) for a in cached[:page_size]]
     
@@ -1861,50 +1866,61 @@ async def fetch_news(query: str = None, country: str = None, category: str = Non
         return get_mock_news()
     
     try:
+        all_articles = []
+        
         async with httpx.AsyncClient() as http_client:
-            params = {
-                'apiKey': NEWS_API_KEY,
-                'pageSize': min(page_size, 100),
-                'language': 'en'
-            }
-            
-            if query:
-                params['q'] = query
-                url = 'https://newsapi.org/v2/everything'
-            else:
-                url = 'https://newsapi.org/v2/top-headlines'
-                if country:
-                    params['country'] = country
-                if category:
-                    params['category'] = category
-            
-            response = await http_client.get(url, params=params, timeout=10.0)
-            data = response.json()
-            
-            if data.get('status') != 'ok':
-                return get_mock_news()
-            
-            articles = []
-            for article in data.get('articles', []):
-                tags = extract_tags(article.get('title', '') + ' ' + (article.get('description') or ''))
+            for lang in languages:
+                params = {
+                    'apiKey': NEWS_API_KEY,
+                    'pageSize': min(page_size // len(languages) + 5, 50),  # Split between languages
+                    'language': lang
+                }
                 
-                article_obj = NewsArticle(
-                    title=article.get('title', ''),
-                    description=article.get('description'),
-                    content=article.get('content'),
-                    url=article.get('url', ''),
-                    source=article.get('source', {}).get('name', 'Unknown'),
-                    published_at=datetime.fromisoformat(article.get('publishedAt', '').replace('Z', '+00:00')) if article.get('publishedAt') else datetime.now(timezone.utc),
-                    image_url=article.get('urlToImage'),
-                    tags=tags,
-                    country=country
-                )
-                articles.append(article_obj)
-            
-            # Cache the results
-            await cache_news(query, [a.model_dump() for a in articles])
-            
-            return articles
+                if query:
+                    params['q'] = query
+                    url = 'https://newsapi.org/v2/everything'
+                else:
+                    url = 'https://newsapi.org/v2/top-headlines'
+                    if country:
+                        params['country'] = country
+                    if category:
+                        params['category'] = category
+                
+                try:
+                    response = await http_client.get(url, params=params, timeout=10.0)
+                    data = response.json()
+                    
+                    if data.get('status') == 'ok':
+                        for article in data.get('articles', []):
+                            tags = extract_tags(article.get('title', '') + ' ' + (article.get('description') or ''))
+                            
+                            article_obj = NewsArticle(
+                                title=article.get('title', ''),
+                                description=article.get('description'),
+                                content=article.get('content'),
+                                url=article.get('url', ''),
+                                source=article.get('source', {}).get('name', 'Unknown'),
+                                published_at=datetime.fromisoformat(article.get('publishedAt', '').replace('Z', '+00:00')) if article.get('publishedAt') else datetime.now(timezone.utc),
+                                image_url=article.get('urlToImage'),
+                                tags=tags,
+                                country=country,
+                                language=lang  # Track language
+                            )
+                            all_articles.append(article_obj)
+                except Exception as e:
+                    logger.warning(f"Error fetching {lang} news: {e}")
+        
+        if not all_articles:
+            return get_mock_news()
+        
+        # Sort by date and limit
+        all_articles.sort(key=lambda x: x.published_at, reverse=True)
+        articles = all_articles[:page_size]
+        
+        # Cache the results
+        await cache_news(cache_key, [a.model_dump() for a in articles])
+        
+        return articles
     except Exception as e:
         logger.error(f"Error fetching news: {e}")
         return get_mock_news()
