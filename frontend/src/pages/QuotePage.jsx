@@ -740,7 +740,7 @@ const QuotePage = () => {
                 </Card>
               )}
 
-              {/* Shareholders / Major Holders with Pie Chart */}
+              {/* Shareholders / Major Holders */}
               {shareholders && (shareholders.major_holders?.length > 0 || shareholders.institutional_holders?.length > 0) && (
                 <Card className="nexus-card">
                   <CardHeader className="card-header-terminal">
@@ -761,13 +761,25 @@ const QuotePage = () => {
                           {showShareholdersHistory ? 'Current' : 'History'}
                         </Button>
                       )}
-                      <div className="flex gap-2 text-[10px]">
-                        <span className="text-zinc-400">Insiders: <span className="text-cyan-400">{shareholders.insiders_percent?.toFixed(1)}%</span></span>
-                        <span className="text-zinc-400">Institutions: <span className="text-amber-400">{shareholders.institutions_percent?.toFixed(1)}%</span></span>
-                      </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="p-2">
+                  <CardContent className="p-3">
+                    {/* Summary Stats */}
+                    <div className="flex gap-4 mb-3 pb-3 border-b border-zinc-800">
+                      <div className="flex-1 text-center">
+                        <p className="text-[10px] text-zinc-500 uppercase">Insiders</p>
+                        <p className="text-lg font-mono text-purple-400">{shareholders.insiders_percent?.toFixed(1)}%</p>
+                      </div>
+                      <div className="flex-1 text-center">
+                        <p className="text-[10px] text-zinc-500 uppercase">Institutions</p>
+                        <p className="text-lg font-mono text-amber-400">{shareholders.institutions_percent?.toFixed(1)}%</p>
+                      </div>
+                      <div className="flex-1 text-center">
+                        <p className="text-[10px] text-zinc-500 uppercase">Float</p>
+                        <p className="text-lg font-mono text-zinc-400">{shareholders.float_percent?.toFixed(1) || (100 - (shareholders.insiders_percent || 0)).toFixed(1)}%</p>
+                      </div>
+                    </div>
+
                     {/* History View */}
                     {showShareholdersHistory && shareholdersHistory?.history?.length > 0 ? (
                       <div className="space-y-2" data-testid="shareholders-history-panel">
@@ -775,8 +787,7 @@ const QuotePage = () => {
                           <h4 className="text-xs text-zinc-400 font-medium">Shareholding Changes Over Time</h4>
                           <Badge variant="outline" className="text-[10px]">{shareholdersHistory.history.length} records</Badge>
                         </div>
-                        <ScrollArea className="h-[280px]">
-                          {/* Group by holder */}
+                        <ScrollArea className="h-[200px]">
                           {(() => {
                             const groupedByHolder = {};
                             shareholdersHistory.history.forEach(event => {
@@ -815,118 +826,40 @@ const QuotePage = () => {
                         </ScrollArea>
                       </div>
                     ) : (
-                      /* Current Shareholders View */
-                      <>
-                        <div className="flex gap-4">
-                          {/* Pie Chart */}
-                          <div className="w-[180px] h-[180px] flex-shrink-0">
-                            {(() => {
-                              // Colors matching Tailwind classes used in the list
-                              const COLORS = {
-                                family: '#c084fc',      // purple-400
-                                government: '#60a5fa',  // blue-400
-                                institutional: '#fbbf24', // amber-400
-                                corporate: '#4ade80',   // green-400
-                                mutual_fund: '#22d3ee', // cyan-400
-                                insider: '#f472b6',     // pink-400
-                                other: '#a1a1aa'        // zinc-400
-                              };
-                              const holders = shareholders.major_holders?.length > 0 
-                                ? shareholders.major_holders 
-                                : shareholders.institutional_holders;
-                              const topHolders = holders?.slice(0, 5) || [];
-                              const topTotal = topHolders.reduce((sum, h) => sum + (h.percent_held || 0), 0);
-                              const othersPercent = Math.max(0, 100 - topTotal);
-                              
-                              const pieData = topHolders.map((h, i) => ({
-                                name: h.name?.split(' ')[0] || `Holder ${i+1}`,
-                                value: h.percent_held || 0,
-                                type: h.holder_type,
-                                color: COLORS[h.holder_type] || COLORS.institutional
-                              }));
-                              
-                              if (othersPercent > 0) {
-                                pieData.push({ name: 'Others/Float', value: othersPercent, type: 'other', color: COLORS.other });
-                              }
-                              
-                              return (
-                                <ResponsiveContainer width="100%" height="100%">
-                                  <PieChart>
-                                    <Pie
-                                      data={pieData}
-                                      cx="50%"
-                                      cy="50%"
-                                      innerRadius={35}
-                                      outerRadius={70}
-                                      paddingAngle={2}
-                                      dataKey="value"
-                                    >
-                                      {pieData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} />
-                                      ))}
-                                    </Pie>
-                                    <Tooltip 
-                                      formatter={(value) => [`${value.toFixed(1)}%`, '']}
-                                      contentStyle={{ 
-                                        backgroundColor: '#18181b', 
-                                        border: '1px solid #3f3f46',
-                                        borderRadius: '4px',
-                                        fontSize: '11px'
-                                      }}
-                                    />
-                                  </PieChart>
-                                </ResponsiveContainer>
-                              );
-                            })()}
-                          </div>
-                          
-                          {/* Holders List */}
-                          <ScrollArea className="flex-1 h-[180px]">
-                            {(shareholders.major_holders?.length > 0 ? shareholders.major_holders : shareholders.institutional_holders)?.slice(0, 8).map((holder, i) => (
-                              <div key={i} className="flex items-center justify-between py-1.5 px-2 hover:bg-zinc-800/30 rounded-sm border-b border-zinc-800/50 last:border-0">
-                                <div className="flex items-center gap-2">
-                                  <div className={`w-2 h-2 rounded-full ${
-                                    holder.holder_type === 'family' ? 'bg-purple-400' :
-                                    holder.holder_type === 'government' ? 'bg-blue-400' :
-                                    holder.holder_type === 'corporate' ? 'bg-green-400' :
-                                    holder.holder_type === 'insider' ? 'bg-pink-400' :
-                                    'bg-amber-400'
-                                  }`} />
-                                  <div>
-                                    <span className="text-xs text-white">{holder.name?.length > 25 ? holder.name.substring(0, 25) + '...' : holder.name}</span>
-                                    {holder.country && <p className="text-[9px] text-zinc-500">{holder.country}</p>}
-                                  </div>
-                                </div>
-                                <span className="text-xs font-mono text-amber-400">{holder.percent_held?.toFixed(1)}%</span>
+                      /* Current Shareholders List View */
+                      <ScrollArea className="h-[220px]">
+                        {(shareholders.major_holders?.length > 0 ? shareholders.major_holders : shareholders.institutional_holders)?.slice(0, 10).map((holder, i) => (
+                          <div key={i} className="flex items-center justify-between py-2 px-2 hover:bg-zinc-800/30 rounded-sm border-b border-zinc-800/50 last:border-0">
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center justify-center w-6 h-6 rounded bg-zinc-800 text-[10px] text-zinc-400 font-mono">
+                                {i + 1}
                               </div>
-                            ))}
-                          </ScrollArea>
-                        </div>
-                        
-                        {/* Legend */}
-                        <div className="flex flex-wrap gap-3 mt-3 pt-2 border-t border-zinc-800">
-                          <div className="flex items-center gap-1.5 text-[10px]">
-                            <div className="w-2 h-2 rounded-full bg-purple-400" />
-                            <span className="text-zinc-400">Family</span>
+                              <div>
+                                <span className="text-sm text-white">{holder.name?.length > 30 ? holder.name.substring(0, 30) + '...' : holder.name}</span>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  {holder.country && <span className="text-[10px] text-zinc-500">{holder.country}</span>}
+                                  <Badge variant="outline" className={`text-[9px] px-1.5 py-0 h-4 ${
+                                    holder.holder_type === 'family' ? 'border-purple-500/50 text-purple-400' :
+                                    holder.holder_type === 'government' ? 'border-blue-500/50 text-blue-400' :
+                                    holder.holder_type === 'corporate' ? 'border-green-500/50 text-green-400' :
+                                    'border-amber-500/50 text-amber-400'
+                                  }`}>
+                                    {holder.holder_type || 'institutional'}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-sm font-mono text-white">{holder.percent_held?.toFixed(2)}%</span>
+                              {holder.change_percent && (
+                                <p className={`text-[10px] font-mono ${holder.change_percent > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                  {holder.change_percent > 0 ? '+' : ''}{holder.change_percent.toFixed(1)}%
+                                </p>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1.5 text-[10px]">
-                            <div className="w-2 h-2 rounded-full bg-blue-400" />
-                            <span className="text-zinc-400">Government</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[10px]">
-                            <div className="w-2 h-2 rounded-full bg-amber-400" />
-                            <span className="text-zinc-400">Institutional</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[10px]">
-                            <div className="w-2 h-2 rounded-full bg-green-400" />
-                            <span className="text-zinc-400">Corporate</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[10px]">
-                            <div className="w-2 h-2 rounded-full bg-zinc-400" />
-                            <span className="text-zinc-400">Float/Others</span>
-                          </div>
-                        </div>
-                      </>
+                        ))}
+                      </ScrollArea>
                     )}
                   </CardContent>
                 </Card>
