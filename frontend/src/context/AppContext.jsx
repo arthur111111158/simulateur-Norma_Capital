@@ -20,6 +20,7 @@ export const AppProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [universe, setUniverse] = useState(null);
+  const [earnings, setEarnings] = useState([]);
 
   // Fetch watchlist
   const fetchWatchlist = useCallback(async () => {
@@ -193,6 +194,58 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // ==================== NEW: OPTIONS CHAIN ====================
+  
+  // Get options expirations
+  const getOptionsExpirations = async (symbol) => {
+    try {
+      const response = await axios.get(`${API}/options/expirations/${symbol}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching options expirations:', error);
+      return null;
+    }
+  };
+
+  // Get options chain
+  const getOptionsChain = async (symbol, expiration) => {
+    try {
+      const response = await axios.get(`${API}/options/chain/${symbol}?expiration=${expiration}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching options chain:', error);
+      return null;
+    }
+  };
+
+  // ==================== NEW: EARNINGS CALENDAR ====================
+  
+  // Fetch earnings calendar
+  const fetchEarnings = useCallback(async (days = 30, region = null) => {
+    try {
+      const params = new URLSearchParams();
+      params.append('days', days);
+      if (region) params.append('region', region);
+      const response = await axios.get(`${API}/earnings/calendar?${params.toString()}`);
+      setEarnings(response.data.events || []);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching earnings:', error);
+      return { events: [] };
+    }
+  }, []);
+
+  // Get earnings for specific symbol
+  const getEarningsForSymbol = async (symbol) => {
+    try {
+      const response = await axios.get(`${API}/earnings/symbol/${symbol}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching earnings for symbol:', error);
+      return null;
+    }
+  };
+
   // Initial data load
   useEffect(() => {
     const loadInitialData = async () => {
@@ -226,6 +279,7 @@ export const AppProvider = ({ children }) => {
     loading,
     selectedAsset,
     universe,
+    earnings,
     setSelectedAsset,
     fetchWatchlist,
     addToWatchlist,
@@ -234,6 +288,7 @@ export const AppProvider = ({ children }) => {
     fetchConflicts,
     fetchMovers,
     fetchUniverse,
+    fetchEarnings,
     getQuote,
     getHistory,
     getSupplyChain,
@@ -242,6 +297,9 @@ export const AppProvider = ({ children }) => {
     getTechnicalIndicators,
     getImpactScore,
     getIndices,
+    getOptionsExpirations,
+    getOptionsChain,
+    getEarningsForSymbol,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
