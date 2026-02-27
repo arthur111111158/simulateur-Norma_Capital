@@ -51,10 +51,6 @@
         @apply border-border;
     }
     
-    html {
-        @apply dark;
-    }
-    
     body {
         @apply bg-[#09090b] text-zinc-100 font-sans antialiased;
         font-family: 'Inter', system-ui, sans-serif;
@@ -64,6 +60,11 @@
     .font-mono, code, .data-value, [data-mono="true"] {
         font-family: 'JetBrains Mono', monospace;
     }
+}
+
+/* Force dark mode */
+html {
+    color-scheme: dark;
 }
 
 /* Scrollbar styling */
