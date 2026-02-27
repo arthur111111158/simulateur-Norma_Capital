@@ -824,11 +824,28 @@ const WorldMapPage = () => {
                           <div className="py-1.5 border-b border-zinc-800/50">
                             <span className="text-sm text-zinc-400">Languages</span>
                             <div className="flex flex-wrap gap-1 mt-1">
-                              {countryData.basic.languages?.map((lang, i) => (
-                                <Badge key={i} variant="outline" className="text-[10px] rounded-none">
-                                  {lang}
-                                </Badge>
-                              ))}
+                              {countryData.basic.languages
+                                ?.filter(lang => {
+                                  const langLower = lang.toLowerCase();
+                                  return langLower.includes('english') || 
+                                         langLower.includes('french') || 
+                                         langLower.includes('français') ||
+                                         langLower === 'english' ||
+                                         langLower === 'french';
+                                })
+                                .map((lang, i) => (
+                                  <Badge key={i} variant="outline" className="text-[10px] rounded-none">
+                                    {lang}
+                                  </Badge>
+                                ))}
+                              {countryData.basic.languages?.filter(lang => {
+                                const langLower = lang.toLowerCase();
+                                return langLower.includes('english') || 
+                                       langLower.includes('french') || 
+                                       langLower.includes('français');
+                              }).length === 0 && (
+                                <span className="text-xs text-zinc-500">Other languages</span>
+                              )}
                             </div>
                           </div>
                           <div className="py-1.5 border-b border-zinc-800/50">
