@@ -1851,8 +1851,126 @@ async def cache_news(cache_key: str, articles: List[Dict]):
     except Exception as e:
         logger.error(f"Error caching news: {e}")
 
+async def fetch_yahoo_finance_news(query: str = None, count: int = 15) -> List[NewsArticle]:
+    """Fetch English financial news from Yahoo Finance"""
+    import yfinance as yf
+    articles = []
+    
+    try:
+        # Use general finance search if no specific query
+        search_term = query or "stock market finance"
+        search = yf.Search(search_term, news_count=count)
+        news_items = search.news or []
+        
+        for item in news_items:
+            try:
+                title = item.get('title', '')
+                if not title:
+                    continue
+                    
+                # Parse publish time
+                pub_time = item.get('providerPublishTime', 0)
+                if pub_time:
+                    published_at = datetime.fromtimestamp(pub_time, tz=timezone.utc)
+                else:
+                    published_at = datetime.now(timezone.utc)
+                
+                tags = extract_tags(title)
+                
+                article = NewsArticle(
+                    title=title,
+                    description=item.get('summary', title),
+                    content=None,
+                    url=item.get('link', ''),
+                    source=item.get('publisher', 'Yahoo Finance'),
+                    published_at=published_at,
+                    image_url=item.get('thumbnail', {}).get('resolutions', [{}])[0].get('url') if item.get('thumbnail') else None,
+                    tags=tags,
+                    country='us',
+                    language='en'
+                )
+                articles.append(article)
+            except Exception as e:
+                logger.warning(f"Error parsing Yahoo Finance article: {e}")
+                continue
+                
+    except Exception as e:
+        logger.error(f"Error fetching Yahoo Finance news: {e}")
+    
+    return articles
+
+async def fetch_boursorama_news(count: int = 15) -> List[NewsArticle]:
+    """Fetch French financial news from Boursorama"""
+    from bs4 import BeautifulSoup
+    articles = []
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "https://www.boursorama.com/actualites/",
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
+                timeout=15.0,
+                follow_redirects=True
+            )
+            
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.text, 'html.parser')
+                
+                # Find all news article links
+                news_links = soup.find_all('a', href=True)
+                seen_titles = set()
+                
+                for link in news_links:
+                    if len(articles) >= count:
+                        break
+                        
+                    href = link.get('href', '')
+                    if '/actualites/' not in href or '/page/' in href:
+                        continue
+                    
+                    # Get the title text
+                    title_text = link.get_text().strip()
+                    
+                    # Clean up the title - remove timestamps and extra whitespace
+                    import re
+                    title_text = re.sub(r'information fournie par.*?•\d+:\d+•?\d*\s*', '', title_text)
+                    title_text = re.sub(r'\s+', ' ', title_text).strip()
+                    
+                    if not title_text or len(title_text) < 15 or title_text in seen_titles:
+                        continue
+                    
+                    # Skip navigation/category links
+                    if title_text.lower() in ['actualités financières', 'voir plus', 'actualités', 'marchés']:
+                        continue
+                    
+                    seen_titles.add(title_text)
+                    
+                    # Build full URL
+                    full_url = href if href.startswith('http') else f"https://www.boursorama.com{href}"
+                    
+                    tags = extract_tags(title_text)
+                    
+                    article = NewsArticle(
+                        title=title_text,
+                        description=title_text,
+                        content=None,
+                        url=full_url,
+                        source="Boursorama",
+                        published_at=datetime.now(timezone.utc) - timedelta(minutes=len(articles) * 10),  # Approximate timing
+                        image_url=None,
+                        tags=tags,
+                        country='fr',
+                        language='fr'
+                    )
+                    articles.append(article)
+                    
+    except Exception as e:
+        logger.error(f"Error fetching Boursorama news: {e}")
+    
+    return articles
+
 async def fetch_news(query: str = None, country: str = None, category: str = None, page_size: int = 20, languages: List[str] = None) -> List[NewsArticle]:
-    """Fetch news from cache or NewsAPI - supports EN and FR languages"""
+    """Fetch news from Yahoo Finance (EN) and Boursorama (FR)"""
     # Default to both English and French
     if languages is None:
         languages = ['en', 'fr']
@@ -1863,62 +1981,21 @@ async def fetch_news(query: str = None, country: str = None, category: str = Non
     if cached:
         return [NewsArticle(**a) for a in cached[:page_size]]
     
-    if not NEWS_API_KEY:
-        return get_mock_news()
-    
     try:
         all_articles = []
+        articles_per_source = (page_size // len(languages)) + 3
         
-        async with httpx.AsyncClient() as http_client:
-            for lang in languages:
-                params = {
-                    'apiKey': NEWS_API_KEY,
-                    'pageSize': min(page_size // len(languages) + 5, 50),  # Split between languages
-                    'language': lang
-                }
-                
-                if query:
-                    params['q'] = query
-                    url = 'https://newsapi.org/v2/everything'
-                else:
-                    # For French news without query, use /everything with a broad finance query
-                    # because /top-headlines doesn't return French content reliably
-                    if lang == 'fr':
-                        url = 'https://newsapi.org/v2/everything'
-                        params['q'] = 'économie OR finance OR bourse OR marché'  # French finance keywords
-                        params['sortBy'] = 'publishedAt'
-                    else:
-                        url = 'https://newsapi.org/v2/top-headlines'
-                        if country:
-                            params['country'] = country
-                        else:
-                            params['country'] = 'us'  # English news from US by default
-                        if category:
-                            params['category'] = category
-                
-                try:
-                    response = await http_client.get(url, params=params, timeout=10.0)
-                    data = response.json()
-                    
-                    if data.get('status') == 'ok':
-                        for article in data.get('articles', []):
-                            tags = extract_tags(article.get('title', '') + ' ' + (article.get('description') or ''))
-                            
-                            article_obj = NewsArticle(
-                                title=article.get('title', ''),
-                                description=article.get('description'),
-                                content=article.get('content'),
-                                url=article.get('url', ''),
-                                source=article.get('source', {}).get('name', 'Unknown'),
-                                published_at=datetime.fromisoformat(article.get('publishedAt', '').replace('Z', '+00:00')) if article.get('publishedAt') else datetime.now(timezone.utc),
-                                image_url=article.get('urlToImage'),
-                                tags=tags,
-                                country=country,
-                                language=lang  # Track language
-                            )
-                            all_articles.append(article_obj)
-                except Exception as e:
-                    logger.warning(f"Error fetching {lang} news: {e}")
+        # Fetch from Yahoo Finance for English news
+        if 'en' in languages:
+            yahoo_articles = await fetch_yahoo_finance_news(query, articles_per_source)
+            all_articles.extend(yahoo_articles)
+            logger.info(f"Fetched {len(yahoo_articles)} articles from Yahoo Finance")
+        
+        # Fetch from Boursorama for French news
+        if 'fr' in languages:
+            boursorama_articles = await fetch_boursorama_news(articles_per_source)
+            all_articles.extend(boursorama_articles)
+            logger.info(f"Fetched {len(boursorama_articles)} articles from Boursorama")
         
         if not all_articles:
             return get_mock_news()
