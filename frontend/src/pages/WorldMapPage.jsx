@@ -194,6 +194,65 @@ const WorldMapPage = () => {
       }));
   }, [news]);
 
+  // Financial centers data
+  const financialCenters = useMemo(() => [
+    { id: 'nyc', name: 'New York', coords: [-74, 40.7], type: 'major', marketCap: 25.3, currency: 'USD' },
+    { id: 'london', name: 'London', coords: [-0.1, 51.5], type: 'major', marketCap: 3.9, currency: 'GBP' },
+    { id: 'tokyo', name: 'Tokyo', coords: [139.7, 35.7], type: 'major', marketCap: 6.5, currency: 'JPY' },
+    { id: 'shanghai', name: 'Shanghai', coords: [121.5, 31.2], type: 'major', marketCap: 7.6, currency: 'CNY' },
+    { id: 'hongkong', name: 'Hong Kong', coords: [114.2, 22.3], type: 'major', marketCap: 4.5, currency: 'HKD' },
+    { id: 'singapore', name: 'Singapore', coords: [103.8, 1.3], type: 'major', marketCap: 0.7, currency: 'SGD' },
+    { id: 'frankfurt', name: 'Frankfurt', coords: [8.7, 50.1], type: 'regional', marketCap: 2.3, currency: 'EUR' },
+    { id: 'paris', name: 'Paris', coords: [2.3, 48.9], type: 'regional', marketCap: 3.2, currency: 'EUR' },
+    { id: 'zurich', name: 'Zurich', coords: [8.5, 47.4], type: 'regional', marketCap: 1.8, currency: 'CHF' },
+    { id: 'sydney', name: 'Sydney', coords: [151.2, -33.9], type: 'regional', marketCap: 1.7, currency: 'AUD' },
+    { id: 'toronto', name: 'Toronto', coords: [-79.4, 43.7], type: 'regional', marketCap: 2.8, currency: 'CAD' },
+    { id: 'mumbai', name: 'Mumbai', coords: [72.9, 19.1], type: 'regional', marketCap: 4.1, currency: 'INR' },
+    { id: 'dubai', name: 'Dubai', coords: [55.3, 25.2], type: 'regional', marketCap: 0.8, currency: 'AED' },
+    { id: 'saopaulo', name: 'São Paulo', coords: [-46.6, -23.5], type: 'emerging', marketCap: 0.9, currency: 'BRL' },
+    { id: 'seoul', name: 'Seoul', coords: [127, 37.5], type: 'regional', marketCap: 2.2, currency: 'KRW' },
+  ], []);
+
+  // Capital flows data (based on real-world FDI and portfolio investment patterns)
+  const capitalFlows = useMemo(() => [
+    // US outflows
+    { id: 'us-eu', from: 'nyc', to: 'london', volume: 450, type: 'fdi', trend: 'stable', description: 'US → UK Direct Investment' },
+    { id: 'us-china', from: 'nyc', to: 'shanghai', volume: 120, type: 'fdi', trend: 'decreasing', description: 'US → China Investment (declining)' },
+    { id: 'us-japan', from: 'nyc', to: 'tokyo', volume: 85, type: 'portfolio', trend: 'stable', description: 'US → Japan Portfolio Flows' },
+    { id: 'us-india', from: 'nyc', to: 'mumbai', volume: 65, type: 'fdi', trend: 'increasing', description: 'US → India Tech Investment' },
+    { id: 'us-brazil', from: 'nyc', to: 'saopaulo', volume: 35, type: 'fdi', trend: 'stable', description: 'US → Brazil Investment' },
+    // European flows
+    { id: 'uk-us', from: 'london', to: 'nyc', volume: 380, type: 'fdi', trend: 'stable', description: 'UK → US Direct Investment' },
+    { id: 'uk-hk', from: 'london', to: 'hongkong', volume: 95, type: 'portfolio', trend: 'decreasing', description: 'UK → HK Portfolio (declining)' },
+    { id: 'eu-us', from: 'frankfurt', to: 'nyc', volume: 280, type: 'fdi', trend: 'stable', description: 'Germany → US Investment' },
+    { id: 'ch-global', from: 'zurich', to: 'singapore', volume: 150, type: 'wealth', trend: 'increasing', description: 'Swiss → Singapore Wealth Management' },
+    { id: 'fr-africa', from: 'paris', to: 'dubai', volume: 45, type: 'fdi', trend: 'stable', description: 'France → Middle East Investment' },
+    // Asian flows
+    { id: 'china-hk', from: 'shanghai', to: 'hongkong', volume: 520, type: 'portfolio', trend: 'increasing', description: 'China → HK Stock Connect' },
+    { id: 'china-sg', from: 'shanghai', to: 'singapore', volume: 180, type: 'wealth', trend: 'increasing', description: 'China → Singapore Wealth Flight' },
+    { id: 'japan-us', from: 'tokyo', to: 'nyc', volume: 320, type: 'portfolio', trend: 'stable', description: 'Japan → US Treasury Holdings' },
+    { id: 'japan-sea', from: 'tokyo', to: 'singapore', volume: 85, type: 'fdi', trend: 'increasing', description: 'Japan → SE Asia Manufacturing' },
+    { id: 'hk-london', from: 'hongkong', to: 'london', volume: 140, type: 'wealth', trend: 'increasing', description: 'HK → UK Capital Migration' },
+    { id: 'sg-india', from: 'singapore', to: 'mumbai', volume: 75, type: 'fdi', trend: 'increasing', description: 'Singapore → India Investment' },
+    { id: 'korea-us', from: 'seoul', to: 'nyc', volume: 95, type: 'portfolio', trend: 'stable', description: 'Korea → US Investment' },
+    // Middle East flows
+    { id: 'dubai-london', from: 'dubai', to: 'london', volume: 120, type: 'wealth', trend: 'stable', description: 'Gulf → UK Real Estate' },
+    { id: 'dubai-india', from: 'dubai', to: 'mumbai', volume: 55, type: 'remittance', trend: 'stable', description: 'UAE → India Remittances' },
+    // Cross-regional
+    { id: 'canada-us', from: 'toronto', to: 'nyc', volume: 180, type: 'fdi', trend: 'stable', description: 'Canada → US Investment' },
+    { id: 'aus-asia', from: 'sydney', to: 'shanghai', volume: 95, type: 'commodity', trend: 'stable', description: 'Australia → China Trade Finance' },
+  ], []);
+
+  // Get coordinates for a financial center by ID
+  const getFlowCoords = useCallback((centerId) => {
+    const center = financialCenters.find(c => c.id === centerId);
+    return center ? center.coords : [0, 0];
+  }, [financialCenters]);
+
+  // State for selected flow
+  const [selectedFlow, setSelectedFlow] = useState(null);
+  const [hoveredFlow, setHoveredFlow] = useState(null);
+
   // Load shipping data
   useEffect(() => {
     const loadShippingData = async () => {
