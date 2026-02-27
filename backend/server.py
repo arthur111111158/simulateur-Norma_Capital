@@ -2668,8 +2668,93 @@ def get_supply_chain(symbol: str) -> List[SupplyChainNode]:
             SupplyChainNode(id="openai", name="OpenAI", symbol="", node_type="partner", tier=1, country="USA", sector="AI", relationship="partner", dependency_percent=20.0, risk_level="high", revenue_impact=12.0, confidence_score=0.95),
         ],
         'MC.PA': [
-            SupplyChainNode(id="loro_piana", name="Loro Piana", symbol="", node_type="supplier", tier=1, country="Italy", sector="Textiles", relationship="supplier", dependency_percent=15.0, risk_level="medium", revenue_impact=5.0, confidence_score=0.80),
+            SupplyChainNode(id="loro_piana_mc", name="Loro Piana", symbol="", node_type="supplier", tier=1, country="Italy", sector="Textiles", relationship="supplier", dependency_percent=15.0, risk_level="medium", revenue_impact=5.0, confidence_score=0.80),
             SupplyChainNode(id="sephora_mc", name="Sephora (owned)", symbol="", node_type="subsidiary", tier=1, country="France", sector="Retail", relationship="subsidiary", dependency_percent=100.0, risk_level="low", revenue_impact=15.0, confidence_score=0.99),
+            SupplyChainNode(id="dfs_mc", name="DFS Group (owned)", symbol="", node_type="subsidiary", tier=1, country="Hong Kong", sector="Retail", relationship="subsidiary", dependency_percent=100.0, risk_level="medium", revenue_impact=8.0, confidence_score=0.95),
+            SupplyChainNode(id="tiffany_mc", name="Tiffany & Co (owned)", symbol="", node_type="subsidiary", tier=1, country="USA", sector="Jewelry", relationship="subsidiary", dependency_percent=100.0, risk_level="low", revenue_impact=12.0, confidence_score=0.99),
+            SupplyChainNode(id="hennessy_mc", name="Hennessy (Moët Hennessy)", symbol="", node_type="subsidiary", tier=1, country="France", sector="Wines & Spirits", relationship="subsidiary", dependency_percent=100.0, risk_level="low", revenue_impact=20.0, confidence_score=0.99),
+        ],
+        # French Banks
+        'GLE.PA': [
+            SupplyChainNode(id="bloomberg_gle", name="Bloomberg LP", symbol="", node_type="supplier", tier=1, country="USA", sector="Data Services", relationship="supplier", dependency_percent=10.0, risk_level="low", revenue_impact=2.0, confidence_score=0.85),
+            SupplyChainNode(id="refinitiv_gle", name="Refinitiv (LSEG)", symbol="LSEG.L", node_type="supplier", tier=1, country="UK", sector="Data Services", relationship="supplier", dependency_percent=8.0, risk_level="low", revenue_impact=2.0, confidence_score=0.80),
+            SupplyChainNode(id="ibm_gle", name="IBM", symbol="IBM", node_type="supplier", tier=1, country="USA", sector="Technology", relationship="supplier", dependency_percent=12.0, risk_level="medium", revenue_impact=4.0, confidence_score=0.75),
+            SupplyChainNode(id="boursorama_gle", name="Boursorama (owned)", symbol="", node_type="subsidiary", tier=1, country="France", sector="Online Banking", relationship="subsidiary", dependency_percent=100.0, risk_level="low", revenue_impact=8.0, confidence_score=0.99),
+            SupplyChainNode(id="ayvens_gle", name="Ayvens (ALD)", symbol="ALD.PA", node_type="subsidiary", tier=1, country="France", sector="Fleet Leasing", relationship="subsidiary", dependency_percent=100.0, risk_level="low", revenue_impact=15.0, confidence_score=0.95),
+        ],
+        'BNP.PA': [
+            SupplyChainNode(id="accenture_bnp", name="Accenture", symbol="ACN", node_type="supplier", tier=1, country="Ireland", sector="Consulting", relationship="supplier", dependency_percent=8.0, risk_level="low", revenue_impact=2.0, confidence_score=0.80),
+            SupplyChainNode(id="ibm_bnp", name="IBM", symbol="IBM", node_type="supplier", tier=1, country="USA", sector="Technology", relationship="supplier", dependency_percent=10.0, risk_level="medium", revenue_impact=3.0, confidence_score=0.75),
+            SupplyChainNode(id="arval_bnp", name="Arval (owned)", symbol="", node_type="subsidiary", tier=1, country="France", sector="Fleet Leasing", relationship="subsidiary", dependency_percent=100.0, risk_level="low", revenue_impact=12.0, confidence_score=0.99),
+            SupplyChainNode(id="exane_bnp", name="Exane (owned)", symbol="", node_type="subsidiary", tier=1, country="France", sector="Brokerage", relationship="subsidiary", dependency_percent=100.0, risk_level="low", revenue_impact=5.0, confidence_score=0.95),
+        ],
+        'ACA.PA': [
+            SupplyChainNode(id="amundi_aca", name="Amundi (owned)", symbol="AMUN.PA", node_type="subsidiary", tier=1, country="France", sector="Asset Management", relationship="subsidiary", dependency_percent=100.0, risk_level="low", revenue_impact=25.0, confidence_score=0.99),
+            SupplyChainNode(id="lcl_aca", name="LCL (owned)", symbol="", node_type="subsidiary", tier=1, country="France", sector="Retail Banking", relationship="subsidiary", dependency_percent=100.0, risk_level="low", revenue_impact=20.0, confidence_score=0.99),
+            SupplyChainNode(id="caceis_aca", name="CACEIS (owned)", symbol="", node_type="subsidiary", tier=1, country="France", sector="Custody", relationship="subsidiary", dependency_percent=100.0, risk_level="low", revenue_impact=8.0, confidence_score=0.95),
+        ],
+        # French Luxury
+        'RMS.PA': [
+            SupplyChainNode(id="tanneries_rms", name="Tanneries d'Annonay", symbol="", node_type="supplier", tier=1, country="France", sector="Leather", relationship="supplier", dependency_percent=25.0, risk_level="medium", revenue_impact=10.0, confidence_score=0.90),
+            SupplyChainNode(id="croco_rms", name="Louisiana Alligator Farms", symbol="", node_type="supplier", tier=1, country="USA", sector="Exotic Leather", relationship="supplier", dependency_percent=15.0, risk_level="high", revenue_impact=8.0, confidence_score=0.85),
+            SupplyChainNode(id="silk_rms", name="Ateliers de Tissage", symbol="", node_type="supplier", tier=1, country="France", sector="Silk", relationship="supplier", dependency_percent=20.0, risk_level="medium", revenue_impact=6.0, confidence_score=0.88),
+        ],
+        'KER.PA': [
+            SupplyChainNode(id="gucci_ker", name="Gucci (owned)", symbol="", node_type="subsidiary", tier=1, country="Italy", sector="Fashion", relationship="subsidiary", dependency_percent=100.0, risk_level="low", revenue_impact=55.0, confidence_score=0.99),
+            SupplyChainNode(id="ysl_ker", name="Saint Laurent (owned)", symbol="", node_type="subsidiary", tier=1, country="France", sector="Fashion", relationship="subsidiary", dependency_percent=100.0, risk_level="low", revenue_impact=20.0, confidence_score=0.99),
+            SupplyChainNode(id="bottega_ker", name="Bottega Veneta (owned)", symbol="", node_type="subsidiary", tier=1, country="Italy", sector="Leather Goods", relationship="subsidiary", dependency_percent=100.0, risk_level="low", revenue_impact=12.0, confidence_score=0.99),
+        ],
+        # French Energy
+        'TTE.PA': [
+            SupplyChainNode(id="schlumberger_tte", name="Schlumberger", symbol="SLB", node_type="supplier", tier=1, country="USA", sector="Oilfield Services", relationship="supplier", dependency_percent=15.0, risk_level="medium", revenue_impact=5.0, confidence_score=0.90),
+            SupplyChainNode(id="halliburton_tte", name="Halliburton", symbol="HAL", node_type="supplier", tier=1, country="USA", sector="Oilfield Services", relationship="supplier", dependency_percent=12.0, risk_level="medium", revenue_impact=4.0, confidence_score=0.88),
+            SupplyChainNode(id="technip_tte", name="TechnipFMC", symbol="FTI", node_type="supplier", tier=1, country="UK", sector="Engineering", relationship="supplier", dependency_percent=10.0, risk_level="medium", revenue_impact=3.0, confidence_score=0.85),
+            SupplyChainNode(id="saft_tte", name="Saft (owned)", symbol="", node_type="subsidiary", tier=1, country="France", sector="Batteries", relationship="subsidiary", dependency_percent=100.0, risk_level="low", revenue_impact=5.0, confidence_score=0.95),
+        ],
+        'ENGI.PA': [
+            SupplyChainNode(id="siemens_engi", name="Siemens Energy", symbol="ENR.DE", node_type="supplier", tier=1, country="Germany", sector="Power Equipment", relationship="supplier", dependency_percent=20.0, risk_level="medium", revenue_impact=8.0, confidence_score=0.88),
+            SupplyChainNode(id="ge_engi", name="GE Vernova", symbol="GEV", node_type="supplier", tier=1, country="USA", sector="Power Equipment", relationship="supplier", dependency_percent=15.0, risk_level="medium", revenue_impact=6.0, confidence_score=0.85),
+            SupplyChainNode(id="tractebel_engi", name="Tractebel (owned)", symbol="", node_type="subsidiary", tier=1, country="Belgium", sector="Engineering", relationship="subsidiary", dependency_percent=100.0, risk_level="low", revenue_impact=10.0, confidence_score=0.95),
+        ],
+        # French Aerospace
+        'AIR.PA': [
+            SupplyChainNode(id="safran_air", name="Safran", symbol="SAF.PA", node_type="supplier", tier=1, country="France", sector="Engines", relationship="supplier", dependency_percent=30.0, risk_level="high", revenue_impact=25.0, confidence_score=0.98),
+            SupplyChainNode(id="ge_air", name="GE Aerospace", symbol="GE", node_type="supplier", tier=1, country="USA", sector="Engines", relationship="supplier", dependency_percent=25.0, risk_level="high", revenue_impact=20.0, confidence_score=0.95),
+            SupplyChainNode(id="rr_air", name="Rolls-Royce", symbol="RR.L", node_type="supplier", tier=1, country="UK", sector="Engines", relationship="supplier", dependency_percent=15.0, risk_level="high", revenue_impact=12.0, confidence_score=0.92),
+            SupplyChainNode(id="spirit_air", name="Spirit AeroSystems", symbol="SPR", node_type="supplier", tier=1, country="USA", sector="Structures", relationship="supplier", dependency_percent=18.0, risk_level="high", revenue_impact=15.0, confidence_score=0.90),
+            SupplyChainNode(id="emirates_air", name="Emirates", symbol="", node_type="customer", tier=1, country="UAE", sector="Airlines", relationship="customer", dependency_percent=12.0, risk_level="low", revenue_impact=10.0, confidence_score=0.92),
+            SupplyChainNode(id="delta_air", name="Delta Air Lines", symbol="DAL", node_type="customer", tier=1, country="USA", sector="Airlines", relationship="customer", dependency_percent=8.0, risk_level="low", revenue_impact=7.0, confidence_score=0.88),
+        ],
+        'SAF.PA': [
+            SupplyChainNode(id="ge_saf", name="GE Aerospace (CFM)", symbol="GE", node_type="partner", tier=1, country="USA", sector="Engines JV", relationship="partner", dependency_percent=50.0, risk_level="critical", revenue_impact=40.0, confidence_score=0.99),
+            SupplyChainNode(id="airbus_saf", name="Airbus", symbol="AIR.PA", node_type="customer", tier=1, country="France", sector="Aircraft", relationship="customer", dependency_percent=35.0, risk_level="low", revenue_impact=30.0, confidence_score=0.98),
+            SupplyChainNode(id="boeing_saf", name="Boeing", symbol="BA", node_type="customer", tier=1, country="USA", sector="Aircraft", relationship="customer", dependency_percent=25.0, risk_level="medium", revenue_impact=20.0, confidence_score=0.95),
+        ],
+        # French Tech
+        'CAP.PA': [
+            SupplyChainNode(id="msft_cap", name="Microsoft", symbol="MSFT", node_type="partner", tier=1, country="USA", sector="Cloud", relationship="partner", dependency_percent=20.0, risk_level="low", revenue_impact=15.0, confidence_score=0.90),
+            SupplyChainNode(id="aws_cap", name="Amazon Web Services", symbol="AMZN", node_type="partner", tier=1, country="USA", sector="Cloud", relationship="partner", dependency_percent=18.0, risk_level="low", revenue_impact=12.0, confidence_score=0.88),
+            SupplyChainNode(id="sap_cap", name="SAP", symbol="SAP.DE", node_type="partner", tier=1, country="Germany", sector="Software", relationship="partner", dependency_percent=15.0, risk_level="low", revenue_impact=10.0, confidence_score=0.85),
+        ],
+        'STMPA.PA': [
+            SupplyChainNode(id="tsmc_stm", name="TSMC", symbol="TSM", node_type="supplier", tier=1, country="Taiwan", sector="Foundry", relationship="supplier", dependency_percent=45.0, risk_level="critical", revenue_impact=30.0, confidence_score=0.98),
+            SupplyChainNode(id="asml_stm", name="ASML", symbol="ASML.AS", node_type="supplier", tier=2, country="Netherlands", sector="Equipment", relationship="supplier", dependency_percent=20.0, risk_level="high", revenue_impact=8.0, confidence_score=0.92),
+            SupplyChainNode(id="apple_stm", name="Apple", symbol="AAPL", node_type="customer", tier=1, country="USA", sector="Consumer Electronics", relationship="customer", dependency_percent=18.0, risk_level="low", revenue_impact=15.0, confidence_score=0.95),
+            SupplyChainNode(id="tesla_stm", name="Tesla", symbol="TSLA", node_type="customer", tier=1, country="USA", sector="Automotive", relationship="customer", dependency_percent=12.0, risk_level="low", revenue_impact=10.0, confidence_score=0.90),
+        ],
+        # French Consumer
+        'OR.PA': [
+            SupplyChainNode(id="basf_or", name="BASF", symbol="BAS.DE", node_type="supplier", tier=1, country="Germany", sector="Chemicals", relationship="supplier", dependency_percent=15.0, risk_level="medium", revenue_impact=8.0, confidence_score=0.85),
+            SupplyChainNode(id="givaudan_or", name="Givaudan", symbol="GIVN.SW", node_type="supplier", tier=1, country="Switzerland", sector="Fragrances", relationship="supplier", dependency_percent=20.0, risk_level="medium", revenue_impact=10.0, confidence_score=0.90),
+            SupplyChainNode(id="symrise_or", name="Symrise", symbol="SY1.DE", node_type="supplier", tier=1, country="Germany", sector="Fragrances", relationship="supplier", dependency_percent=12.0, risk_level="medium", revenue_impact=6.0, confidence_score=0.85),
+            SupplyChainNode(id="walmart_or", name="Walmart", symbol="WMT", node_type="customer", tier=1, country="USA", sector="Retail", relationship="customer", dependency_percent=8.0, risk_level="low", revenue_impact=5.0, confidence_score=0.80),
+            SupplyChainNode(id="amazon_or", name="Amazon", symbol="AMZN", node_type="customer", tier=1, country="USA", sector="E-commerce", relationship="customer", dependency_percent=10.0, risk_level="low", revenue_impact=7.0, confidence_score=0.82),
+        ],
+        'SAN.PA': [
+            SupplyChainNode(id="lonza_san", name="Lonza", symbol="LONN.SW", node_type="supplier", tier=1, country="Switzerland", sector="CDMO", relationship="supplier", dependency_percent=15.0, risk_level="medium", revenue_impact=8.0, confidence_score=0.88),
+            SupplyChainNode(id="wuxi_san", name="WuXi Biologics", symbol="2269.HK", node_type="supplier", tier=1, country="China", sector="CDMO", relationship="supplier", dependency_percent=12.0, risk_level="high", revenue_impact=6.0, confidence_score=0.82),
+            SupplyChainNode(id="cvs_san", name="CVS Health", symbol="CVS", node_type="customer", tier=1, country="USA", sector="Pharmacy", relationship="customer", dependency_percent=10.0, risk_level="low", revenue_impact=8.0, confidence_score=0.85),
+            SupplyChainNode(id="mckesson_san", name="McKesson", symbol="MCK", node_type="customer", tier=1, country="USA", sector="Distribution", relationship="customer", dependency_percent=12.0, risk_level="low", revenue_impact=10.0, confidence_score=0.88),
         ],
         '005930.KS': [
             SupplyChainNode(id="asml_sam", name="ASML", symbol="ASML.AS", node_type="supplier", tier=1, country="Netherlands", sector="Equipment", relationship="supplier", dependency_percent=60.0, risk_level="critical", revenue_impact=20.0, confidence_score=0.98),
