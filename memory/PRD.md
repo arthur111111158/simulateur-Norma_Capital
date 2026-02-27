@@ -11,14 +11,15 @@ Build a "Bloomberg-like Terminal" covering:
 - **Options Chain data** for stock options (calls/puts)
 - **Earnings Calendar** for upcoming company earnings announcements
 - **Real-time updates** via WebSocket with polling fallback
+- **Dedicated Commodities & Forex pages** with currency converter
 
 ## Architecture
 - **Frontend**: React 18 + Tailwind CSS + Shadcn/UI + ReactFlow + React Simple Maps + Recharts
 - **Backend**: FastAPI + Motor (MongoDB async)
-- **Database**: MongoDB (with caching for news/conflicts/earnings)
+- **Database**: MongoDB (with caching for news/conflicts/earnings/forex)
 - **Data Sources**: 
-  - Yahoo Finance (real-time market data - 163+ global stocks, options, earnings)
-  - NewsAPI (news aggregation - LIVE with MongoDB cache)
+  - Yahoo Finance (real-time market data - 163+ global stocks, options, earnings, forex rates, NEWS)
+  - Boursorama (French financial news - LIVE scraping)
   - GDELT GEO API (geopolitical events - LIVE with MongoDB cache)
   - Static Shipping Data (27 seaports, 20 airports, 18 routes with dynamic disruption analysis)
 
@@ -31,6 +32,25 @@ Build a "Bloomberg-like Terminal" covering:
 6. **Logistics Analysts**: Need shipping routes and disruption monitoring
 
 ## What's Been Implemented
+
+### 2026-02-27 - News Sources Change (Yahoo Finance + Boursorama)
+- **Replaced NewsAPI** with:
+  - **Yahoo Finance** for English financial news (stock market, earnings, S&P 500, etc.)
+  - **Boursorama** for French financial news (web scraping)
+- **Benefits**:
+  - More relevant financial news (less general news)
+  - No API key required for Yahoo Finance
+  - Real-time French financial news from major French broker
+
+### 2026-02-27 - Forex Currency Converter Fix
+- **Fixed Forex converter** with cached rates to avoid yfinance rate limiting
+- **5-minute TTL cache** for forex rates
+- **Cross-currency conversion** via USD fallback for pairs not directly available
+
+### 2026-02-27 - News/Conflicts Language Filtering (EN/FR Only)
+- **Conflict titles** now generated in standardized English (not raw GDELT titles)
+- **News API** supports `?languages=en,fr` parameter
+- **Mock news** include French articles for fallback
 
 ### 2026-02-27 - Global Shipping Routes Visualization
 - **Maritime Shipping Routes**:
@@ -48,13 +68,6 @@ Build a "Bloomberg-like Terminal" covering:
   - Dynamic disruption level calculation based on current conflicts
   - Routes affected: Asia-Europe via Suez (40% - Red Sea/Yemen), Persian Gulf-Asia (100% - Iran), Intra-Asia (100% - South China Sea/Taiwan)
   - Volume at risk calculation (currently 57.6% of global shipping volume)
-  
-- **UI Features**:
-  - Layer tabs: All, Maritime, Air Cargo, Conflicts
-  - Ports toggle to show/hide port markers
-  - Route details panel with origin, destination, distance, transit time, volume, chokepoints
-  - Risk Summary with high/medium/low risk routes and critical chokepoints
-  - Interactive legend
 
 ### 2026-02-27 - Options Chain, Earnings Calendar, Real-time Updates
 - **Options Chain Feature**:
@@ -90,6 +103,11 @@ Build a "Bloomberg-like Terminal" covering:
 - `GET /api/market/indices?region=...` - Global indices
 - `GET /api/market/universe` - Full list of instruments
 
+### Forex (with converter)
+- `GET /api/forex/pairs` - All forex pairs with live rates
+- `GET /api/forex/currencies` - List of available currencies
+- `POST /api/forex/convert?amount=X&from_currency=EUR&to_currencies=USD,GBP` - Multi-currency conversion
+
 ### Options Chain
 - `GET /api/options/expirations/{symbol}` - Available expiration dates
 - `GET /api/options/chain/{symbol}?expiration={date}` - Options chain (calls/puts)
@@ -98,15 +116,15 @@ Build a "Bloomberg-like Terminal" covering:
 - `GET /api/earnings/calendar?days={n}&region={region}` - Upcoming earnings
 - `GET /api/earnings/symbol/{symbol}` - Earnings for specific symbol
 
-### Shipping Routes (NEW)
+### Shipping Routes
 - `GET /api/shipping/routes?route_type={all|maritime|air}` - Get shipping routes with disruption analysis
 - `GET /api/shipping/ports` - Get all major ports and airports
 - `GET /api/shipping/stats` - Get shipping statistics and risk summary
 
 ### News & Conflicts
-- `GET /api/news` - News with filters (NewsAPI - LIVE)
+- `GET /api/news?languages=en,fr` - News from Yahoo Finance (EN) + Boursorama (FR)
 - `GET /api/news/breaking` - Breaking headlines
-- `GET /api/conflicts` - Geopolitical events (GDELT + Baseline - LIVE)
+- `GET /api/conflicts` - Geopolitical events (GDELT - titles in English)
 - `GET /api/conflicts/{id}` - Conflict detail
 
 ### Analysis
@@ -119,21 +137,23 @@ Build a "Bloomberg-like Terminal" covering:
 ## Frontend Pages
 - `/` - Dashboard with global markets overview
 - `/quote?symbol={symbol}` - Quote page with chart, technicals, options chain
-- `/news` - News terminal
-- `/worldmap` - Interactive map with conflicts AND shipping routes (NEW)
+- `/news` - News terminal (Yahoo Finance + Boursorama)
+- `/worldmap` - Interactive map with conflicts AND shipping routes
 - `/supplychain?symbol={symbol}` - Supply chain graph
 - `/screener` - Asset screener
 - `/earnings` - Earnings calendar
+- `/commodities` - Commodities page
+- `/forex` - Forex page with currency converter
 - `/settings` - User settings
 
 ## 3rd Party Integrations Status
 | Integration | Status | Notes |
 |------------|--------|-------|
-| Yahoo Finance | LIVE | 163+ global stocks, indices, commodities, forex, options, earnings |
-| NewsAPI | LIVE | Real-time news with MongoDB cache |
+| Yahoo Finance | LIVE | 163+ stocks, forex, options, earnings, NEWS |
+| Boursorama | LIVE | French financial news (web scraping) |
 | GDELT GEO API | LIVE | Geopolitical events with MongoDB cache |
-| MongoDB | LIVE | Watchlist + News/Conflicts/Earnings caching |
-| Shipping Data | STATIC | 27 seaports, 20 airports, 18 routes (disruption calculated dynamically) |
+| MongoDB | LIVE | Caching for news/conflicts/earnings/forex |
+| Shipping Data | STATIC | 27 seaports, 20 airports, 18 routes |
 
 ## Prioritized Backlog
 
@@ -141,8 +161,8 @@ Build a "Bloomberg-like Terminal" covering:
 - [x] Core terminal UI with navigation
 - [x] Real-time stock quotes
 - [x] Price charts with multiple timeframes
-- [x] News feed with tagging (NewsAPI - LIVE)
-- [x] Conflict map (GDELT - LIVE)
+- [x] News feed with tagging (Yahoo Finance + Boursorama - LIVE)
+- [x] Conflict map (GDELT - LIVE, English titles)
 - [x] Supply chain graph
 - [x] Global stock coverage (US, Europe, Asia)
 - [x] Technical indicators (RSI, MACD, SMA, Bollinger)
@@ -151,9 +171,11 @@ Build a "Bloomberg-like Terminal" covering:
 - [x] Options chain data
 - [x] Earnings calendar
 - [x] WebSocket for real-time updates
-- [x] **Maritime shipping routes + volumes**
-- [x] **Air cargo routes + volumes**
-- [x] **Route disruption analysis based on conflicts**
+- [x] Maritime shipping routes + volumes
+- [x] Air cargo routes + volumes
+- [x] Route disruption analysis based on conflicts
+- [x] Forex currency converter
+- [x] News in English AND French only
 
 ### P1 - High Priority (Next)
 - [ ] Real-time shipping data via AIS API (MarineTraffic/VesselFinder)
@@ -167,6 +189,7 @@ Build a "Bloomberg-like Terminal" covering:
 - [ ] Historical impact score trends
 - [ ] Correlation matrix
 - [ ] Options greeks (delta, gamma, theta, vega)
+- [ ] React hydration error fix (Dashboard.jsx)
 
 ### P3 - Nice to Have
 - [ ] Dark/Light theme toggle
@@ -178,13 +201,14 @@ Build a "Bloomberg-like Terminal" covering:
 1. **Quote Page Load Time**: 10-30 seconds due to multiple Yahoo Finance API calls
 2. **WebSocket**: May not work through some proxies - polling fallback available
 3. **Shipping Data**: Static routes/ports (not real-time vessel tracking)
+4. **Forex Converter UI**: May have timing issues on first load (rates take time to cache)
 
 ## Environment Configuration
-- NewsAPI Key: Configured in backend/.env
 - GDELT: No key required (public API)
+- Yahoo Finance: No key required (yfinance library)
 - MongoDB: Configured in backend/.env
 
 ## Test Results
-- Backend: 100% pass (15/15 shipping tests + 16/16 options/earnings tests)
-- Frontend: 100% (all features working)
-- Last test report: /app/test_reports/iteration_4.json
+- Backend: 100% pass
+- Frontend: 95% (minor hydration warning)
+- Last test report: /app/test_reports/iteration_5.json
