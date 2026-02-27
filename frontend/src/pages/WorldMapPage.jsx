@@ -269,6 +269,9 @@ const WorldMapPage = () => {
                   <TabsTrigger value="air" className="text-xs h-6 px-3" data-testid="layer-air">
                     <Plane className="w-3 h-3 mr-1" />Air Cargo
                   </TabsTrigger>
+                  <TabsTrigger value="countries" className="text-xs h-6 px-3" data-testid="layer-countries">
+                    <Flag className="w-3 h-3 mr-1" />Countries
+                  </TabsTrigger>
                   <TabsTrigger value="conflicts" className="text-xs h-6 px-3" data-testid="layer-conflicts">
                     <AlertTriangle className="w-3 h-3 mr-1" />Conflicts
                   </TabsTrigger>
