@@ -2975,6 +2975,241 @@ KNOWN_SHAREHOLDERS = {
             {"name": "Norges Bank", "percent": 2.9, "type": "government", "country": "Norway"},
         ]
     },
+    # =====================================================
+    # GERMANY - DAX 40 Major Companies
+    # =====================================================
+    "SAP.DE": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 6.8, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 3.2, "type": "institutional", "country": "USA"},
+            {"name": "Norges Bank", "percent": 2.5, "type": "government", "country": "Norway"},
+            {"name": "Dietmar Hopp (Founder)", "percent": 4.2, "type": "family", "country": "Germany"},
+        ]
+    },
+    "SIE.DE": {
+        "major": [
+            {"name": "Siemens Family (von Siemens)", "percent": 6.0, "type": "family", "country": "Germany"},
+            {"name": "BlackRock Inc.", "percent": 7.1, "type": "institutional", "country": "USA"},
+            {"name": "Norges Bank", "percent": 3.0, "type": "government", "country": "Norway"},
+            {"name": "The Vanguard Group", "percent": 2.8, "type": "institutional", "country": "USA"},
+        ]
+    },
+    "ALV.DE": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 7.5, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 3.4, "type": "institutional", "country": "USA"},
+            {"name": "Norges Bank", "percent": 3.1, "type": "government", "country": "Norway"},
+            {"name": "Capital Group", "percent": 2.9, "type": "institutional", "country": "USA"},
+        ]
+    },
+    "DBK.DE": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 5.1, "type": "institutional", "country": "USA"},
+            {"name": "Capital Group", "percent": 4.8, "type": "institutional", "country": "USA"},
+            {"name": "Qatar Investment Authority", "percent": 6.1, "type": "government", "country": "Qatar"},
+            {"name": "The Vanguard Group", "percent": 2.5, "type": "institutional", "country": "USA"},
+        ]
+    },
+    "BMW.DE": {
+        "major": [
+            {"name": "Famille Quandt/Klatten", "percent": 46.6, "type": "family", "country": "Germany"},
+            {"name": "BlackRock Inc.", "percent": 5.2, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 2.1, "type": "institutional", "country": "USA"},
+        ]
+    },
+    "MBG.DE": {
+        "major": [
+            {"name": "Li Shufu (Geely)", "percent": 9.7, "type": "family", "country": "China"},
+            {"name": "Kuwait Investment Authority", "percent": 6.8, "type": "government", "country": "Kuwait"},
+            {"name": "BlackRock Inc.", "percent": 6.0, "type": "institutional", "country": "USA"},
+            {"name": "Norges Bank", "percent": 3.2, "type": "government", "country": "Norway"},
+        ]
+    },
+    "VOW3.DE": {
+        "major": [
+            {"name": "Porsche Automobil Holding SE", "percent": 31.4, "type": "corporate", "country": "Germany"},
+            {"name": "Famille Porsche-Piëch", "percent": 53.3, "type": "family", "country": "Austria"},
+            {"name": "Lower Saxony (State)", "percent": 11.8, "type": "government", "country": "Germany"},
+            {"name": "Qatar Investment Authority", "percent": 10.5, "type": "government", "country": "Qatar"},
+        ]
+    },
+    "BAS.DE": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 7.8, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 3.5, "type": "institutional", "country": "USA"},
+            {"name": "Norges Bank", "percent": 3.0, "type": "government", "country": "Norway"},
+        ]
+    },
+    "BAYN.DE": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 7.2, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 3.4, "type": "institutional", "country": "USA"},
+            {"name": "Capital Group", "percent": 3.0, "type": "institutional", "country": "USA"},
+            {"name": "Norges Bank", "percent": 2.8, "type": "government", "country": "Norway"},
+        ]
+    },
+    "DTE.DE": {
+        "major": [
+            {"name": "German Federal Government (KfW)", "percent": 13.8, "type": "government", "country": "Germany"},
+            {"name": "BlackRock Inc.", "percent": 6.5, "type": "institutional", "country": "USA"},
+            {"name": "Norges Bank", "percent": 2.9, "type": "government", "country": "Norway"},
+            {"name": "The Vanguard Group", "percent": 2.5, "type": "institutional", "country": "USA"},
+        ]
+    },
+    "ADS.DE": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 8.5, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 3.8, "type": "institutional", "country": "USA"},
+            {"name": "Norges Bank", "percent": 2.4, "type": "government", "country": "Norway"},
+        ]
+    },
+    "MUV2.DE": {
+        "major": [
+            {"name": "Warren Buffett (Berkshire)", "percent": 11.2, "type": "institutional", "country": "USA"},
+            {"name": "BlackRock Inc.", "percent": 5.8, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 2.9, "type": "institutional", "country": "USA"},
+        ]
+    },
+    # =====================================================
+    # UK - FTSE 100 Major Companies
+    # =====================================================
+    "SHEL.L": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 8.2, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 3.9, "type": "institutional", "country": "USA"},
+            {"name": "Norges Bank", "percent": 2.8, "type": "government", "country": "Norway"},
+            {"name": "State Street Corp", "percent": 2.5, "type": "institutional", "country": "USA"},
+        ]
+    },
+    "BP.L": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 8.5, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 4.1, "type": "institutional", "country": "USA"},
+            {"name": "Norges Bank", "percent": 2.6, "type": "government", "country": "Norway"},
+        ]
+    },
+    "HSBA.L": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 7.8, "type": "institutional", "country": "USA"},
+            {"name": "Ping An Insurance", "percent": 8.0, "type": "institutional", "country": "China"},
+            {"name": "The Vanguard Group", "percent": 3.2, "type": "institutional", "country": "USA"},
+            {"name": "Norges Bank", "percent": 2.5, "type": "government", "country": "Norway"},
+        ]
+    },
+    "AZN.L": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 7.5, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 3.8, "type": "institutional", "country": "USA"},
+            {"name": "Capital Group", "percent": 3.2, "type": "institutional", "country": "USA"},
+            {"name": "Norges Bank", "percent": 2.4, "type": "government", "country": "Norway"},
+        ]
+    },
+    "GSK.L": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 7.2, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 3.5, "type": "institutional", "country": "USA"},
+            {"name": "Dodge & Cox", "percent": 4.8, "type": "institutional", "country": "USA"},
+        ]
+    },
+    "ULVR.L": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 6.9, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 3.4, "type": "institutional", "country": "USA"},
+            {"name": "Norges Bank", "percent": 2.8, "type": "government", "country": "Norway"},
+            {"name": "Leverhulme Trust", "percent": 1.5, "type": "institutional", "country": "UK"},
+        ]
+    },
+    "RIO.L": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 8.2, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 4.0, "type": "institutional", "country": "USA"},
+            {"name": "Chinalco (Aluminum Corp of China)", "percent": 14.9, "type": "government", "country": "China"},
+        ]
+    },
+    "GLEN.L": {
+        "major": [
+            {"name": "Qatar Investment Authority", "percent": 8.9, "type": "government", "country": "Qatar"},
+            {"name": "BlackRock Inc.", "percent": 6.5, "type": "institutional", "country": "USA"},
+            {"name": "Ivan Glasenberg (Former CEO)", "percent": 9.1, "type": "insider", "country": "Switzerland"},
+        ]
+    },
+    "BARC.L": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 7.8, "type": "institutional", "country": "USA"},
+            {"name": "Qatar Holding LLC", "percent": 5.9, "type": "government", "country": "Qatar"},
+            {"name": "The Vanguard Group", "percent": 3.2, "type": "institutional", "country": "USA"},
+        ]
+    },
+    "LLOY.L": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 5.5, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 2.8, "type": "institutional", "country": "USA"},
+            {"name": "Schroders", "percent": 5.2, "type": "institutional", "country": "UK"},
+        ]
+    },
+    "VOD.L": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 7.2, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 3.5, "type": "institutional", "country": "USA"},
+            {"name": "e& (Emirates Telecom)", "percent": 14.6, "type": "corporate", "country": "UAE"},
+        ]
+    },
+    "DGE.L": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 7.5, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 3.8, "type": "institutional", "country": "USA"},
+            {"name": "Capital Group", "percent": 5.2, "type": "institutional", "country": "USA"},
+        ]
+    },
+    # =====================================================
+    # SWITZERLAND
+    # =====================================================
+    "NESN.SW": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 5.8, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 3.2, "type": "institutional", "country": "USA"},
+            {"name": "Norges Bank", "percent": 2.8, "type": "government", "country": "Norway"},
+        ]
+    },
+    "NOVN.SW": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 6.5, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 3.5, "type": "institutional", "country": "USA"},
+            {"name": "Norges Bank", "percent": 2.4, "type": "government", "country": "Norway"},
+        ]
+    },
+    "ROG.SW": {
+        "major": [
+            {"name": "Roche Family (Oeri/Hoffmann)", "percent": 45.0, "type": "family", "country": "Switzerland"},
+            {"name": "Novartis AG", "percent": 33.3, "type": "corporate", "country": "Switzerland"},
+            {"name": "BlackRock Inc.", "percent": 2.5, "type": "institutional", "country": "USA"},
+        ]
+    },
+    "UBSG.SW": {
+        "major": [
+            {"name": "Government of Singapore (GIC)", "percent": 7.0, "type": "government", "country": "Singapore"},
+            {"name": "BlackRock Inc.", "percent": 5.5, "type": "institutional", "country": "USA"},
+            {"name": "Norges Bank", "percent": 3.2, "type": "government", "country": "Norway"},
+            {"name": "The Vanguard Group", "percent": 2.8, "type": "institutional", "country": "USA"},
+        ]
+    },
+    # =====================================================
+    # NETHERLANDS
+    # =====================================================
+    "ASML.AS": {
+        "major": [
+            {"name": "Capital Group", "percent": 15.8, "type": "institutional", "country": "USA"},
+            {"name": "BlackRock Inc.", "percent": 7.9, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 3.2, "type": "institutional", "country": "USA"},
+        ]
+    },
+    "INGA.AS": {
+        "major": [
+            {"name": "BlackRock Inc.", "percent": 6.8, "type": "institutional", "country": "USA"},
+            {"name": "The Vanguard Group", "percent": 3.1, "type": "institutional", "country": "USA"},
+            {"name": "Norges Bank", "percent": 2.5, "type": "government", "country": "Norway"},
+        ]
+    },
 }
 
 async def fetch_shareholders_data(symbol: str) -> ShareholdersData:
