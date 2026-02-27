@@ -3357,9 +3357,12 @@ async def convert_currency(
     from_currency: str = Query(..., description="Source currency code"),
     to_currencies: str = Query(..., description="Target currency codes, comma-separated")
 ):
-    """Convert amount from one currency to multiple currencies"""
+    """Convert amount from one currency to multiple currencies using cached rates"""
     from_curr = from_currency.upper()
     to_list = [c.strip().upper() for c in to_currencies.split(",")]
+    
+    # Get cached forex rates (single batch fetch)
+    cached_rates = await get_cached_forex_rates()
     
     results = []
     
@@ -3370,16 +3373,16 @@ async def convert_currency(
                 "to": to_curr,
                 "amount": amount,
                 "converted": amount,
-                "rate": 1.0
+                "rate": 1.0,
+                "currency_info": CURRENCIES.get(to_curr, {})
             })
             continue
         
         try:
-            # Get rate
-            rate_data = await get_forex_rate(from_curr, to_curr)
-            rate = rate_data.get("rate", 0)
+            # Get rate from cache
+            rate = get_forex_rate_from_cache(from_curr, to_curr, cached_rates)
             
-            if rate > 0:
+            if rate and rate > 0:
                 converted = amount * rate
                 results.append({
                     "from": from_curr,
@@ -3388,6 +3391,15 @@ async def convert_currency(
                     "converted": converted,
                     "rate": rate,
                     "currency_info": CURRENCIES.get(to_curr, {})
+                })
+            else:
+                results.append({
+                    "from": from_curr,
+                    "to": to_curr,
+                    "amount": amount,
+                    "converted": None,
+                    "rate": None,
+                    "error": f"Rate not available for {from_curr}/{to_curr}"
                 })
         except Exception as e:
             logger.error(f"Error converting {from_curr} to {to_curr}: {e}")
