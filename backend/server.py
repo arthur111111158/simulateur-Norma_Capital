@@ -3020,6 +3020,68 @@ async def get_shipping_stats_api():
         }
     }
 
+# ==================== COUNTRY DATA ROUTES ====================
+
+@api_router.get("/country/{country_code}")
+async def get_country_data_route(country_code: str):
+    """Get comprehensive country data (economic + demographic)"""
+    data = await fetch_country_data(country_code)
+    if not data:
+        raise HTTPException(status_code=404, detail=f"Country data not found for {country_code}")
+    return data.model_dump()
+
+@api_router.get("/country/search/{query}")
+async def search_country(query: str):
+    """Search for countries by name"""
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(f"https://restcountries.com/v3.1/name/{query}")
+            if response.status_code == 200:
+                data = response.json()
+                results = []
+                for country in data[:10]:  # Limit to 10 results
+                    results.append({
+                        "name": country.get('name', {}).get('common'),
+                        "official_name": country.get('name', {}).get('official'),
+                        "iso_code": country.get('cca2'),
+                        "iso_code_3": country.get('cca3'),
+                        "region": country.get('region'),
+                        "flag_url": country.get('flags', {}).get('svg')
+                    })
+                return {"results": results}
+            return {"results": []}
+    except Exception as e:
+        logger.error(f"Error searching countries: {e}")
+        return {"results": []}
+
+@api_router.get("/countries/list")
+async def get_countries_list():
+    """Get list of all countries with basic info"""
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get("https://restcountries.com/v3.1/all?fields=name,cca2,cca3,region,subregion,flags,population,area")
+            if response.status_code == 200:
+                data = response.json()
+                countries = []
+                for country in data:
+                    countries.append({
+                        "name": country.get('name', {}).get('common'),
+                        "iso_code": country.get('cca2'),
+                        "iso_code_3": country.get('cca3'),
+                        "region": country.get('region'),
+                        "subregion": country.get('subregion'),
+                        "flag_url": country.get('flags', {}).get('svg'),
+                        "population": country.get('population'),
+                        "area": country.get('area')
+                    })
+                # Sort by name
+                countries.sort(key=lambda x: x.get('name', ''))
+                return {"countries": countries, "total": len(countries)}
+            return {"countries": [], "total": 0}
+    except Exception as e:
+        logger.error(f"Error fetching countries list: {e}")
+        return {"countries": [], "total": 0}
+
 # ==================== WEBSOCKET ROUTE ====================
 
 @app.websocket("/ws/quotes")
