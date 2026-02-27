@@ -25,14 +25,53 @@ import {
   Users,
   Building2,
   Landmark,
-  UserCircle
+  UserCircle,
+  CandlestickChart,
+  LineChart as LineChartIcon
 } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, 
   AreaChart, Area, CartesianGrid, Bar, BarChart,
-  PieChart, Pie, Cell
+  PieChart, Pie, Cell, ComposedChart, Rectangle
 } from 'recharts';
 import OptionsChain from '../components/OptionsChain';
+
+// Custom Candlestick component for Recharts
+const Candlestick = (props) => {
+  const { x, y, width, height, open, close, high, low, fill } = props;
+  const isGreen = close >= open;
+  const color = isGreen ? '#22c55e' : '#ef4444';
+  
+  const candleWidth = Math.max(width * 0.6, 4);
+  const wickWidth = Math.max(1, width * 0.1);
+  
+  const bodyTop = Math.min(y, y + height);
+  const bodyHeight = Math.abs(height);
+  
+  return (
+    <g>
+      {/* Wick (high to low) */}
+      <line
+        x1={x + width / 2}
+        y1={props.highY}
+        x2={x + width / 2}
+        y2={props.lowY}
+        stroke={color}
+        strokeWidth={wickWidth}
+      />
+      {/* Body (open to close) */}
+      <rect
+        x={x + (width - candleWidth) / 2}
+        y={bodyTop}
+        width={candleWidth}
+        height={Math.max(bodyHeight, 1)}
+        fill={isGreen ? color : color}
+        stroke={color}
+        strokeWidth={1}
+      />
+    </g>
+  );
+};
 
 const QuotePage = () => {
   const [searchParams] = useSearchParams();
