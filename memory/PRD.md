@@ -53,6 +53,30 @@ Air Liquide, Airbus, Alstom, Atos, AXA, BNP Paribas, Bouygues, Bureau Veritas, C
 
 ## What's Been Implemented
 
+### 2026-02-28 - Candlestick Chart + Shareholders History
+- **NEW: Candlestick Chart**:
+  - Toggle between Line chart and Candlestick chart on Quote page
+  - Green candles for bullish days (close > open)
+  - Red candles for bearish days (close < open)
+  - OHLC data displayed in tooltip (Open, High, Low, Close)
+  - Works with all timeframes (1D, 5D, 1M, 3M, 1Y, 5Y)
+
+- **NEW: Shareholders History API** (`/api/shareholders/{symbol}/history`):
+  - Quarterly shareholding changes (Q1-Q4 2024)
+  - Shows holder name, percentage, and change vs previous quarter
+  - Data for ~10 major European companies:
+    - France: LVMH, Airbus, Société Générale, Hermès
+    - Germany: BMW, Volkswagen
+    - UK: HSBC
+  - UI toggle between "Current" and "History" views
+  - Grouped display by holder with timeline of changes
+
+- **Supply Chain Extended to DAX/FTSE**:
+  - BMW.DE: CATL, Samsung SDI, Bosch, Continental, subsidiaries (MINI, Rolls-Royce Motor Cars)
+  - SAP.DE: AWS, Microsoft Azure, Google Cloud
+  - HSBA.L: IBM, subsidiaries (HSBC Asia-Pacific, HSBC UK, HSBC Asset Management)
+  - BP.L: Schlumberger, Halliburton, Baker Hughes, Technip Energies
+
 ### 2026-02-27 - Shareholders Data + Supply Chain Enhancement
 - **NEW: Major Shareholders API** (`/api/shareholders/{symbol}`):
   - % held by insiders and institutions
