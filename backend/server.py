@@ -562,6 +562,108 @@ class ShippingStats(BaseModel):
     routes_affected_by_conflicts: int
     volume_at_risk_percent: float
 
+# ==================== COUNTRY DATA MODELS ====================
+
+class CountryEconomicData(BaseModel):
+    gdp: Optional[float] = None  # Current USD
+    gdp_per_capita: Optional[float] = None
+    gdp_growth: Optional[float] = None  # Annual %
+    inflation: Optional[float] = None  # Annual %
+    unemployment: Optional[float] = None  # % of labor force
+    trade_balance: Optional[float] = None  # Current USD
+    external_debt: Optional[float] = None  # Current USD
+    debt_to_gdp: Optional[float] = None  # %
+    fdi_inflow: Optional[float] = None  # Current USD
+    exports: Optional[float] = None
+    imports: Optional[float] = None
+    currency: Optional[str] = None
+    currency_code: Optional[str] = None
+
+class CountryDemographicData(BaseModel):
+    population: Optional[int] = None
+    population_growth: Optional[float] = None  # Annual %
+    population_density: Optional[float] = None  # per km²
+    life_expectancy: Optional[float] = None
+    median_age: Optional[float] = None
+    urban_population_percent: Optional[float] = None
+    fertility_rate: Optional[float] = None
+    hdi: Optional[float] = None  # Human Development Index
+    literacy_rate: Optional[float] = None
+
+class CountryBasicInfo(BaseModel):
+    name: str
+    official_name: Optional[str] = None
+    iso_code: str  # ISO 3166-1 alpha-2
+    iso_code_3: Optional[str] = None  # ISO 3166-1 alpha-3
+    region: Optional[str] = None
+    subregion: Optional[str] = None
+    capital: Optional[str] = None
+    languages: List[str] = []
+    flag_url: Optional[str] = None
+    coat_of_arms_url: Optional[str] = None
+    area: Optional[float] = None  # km²
+    borders: List[str] = []
+    timezones: List[str] = []
+    continent: Optional[str] = None
+
+class CountryData(BaseModel):
+    basic: CountryBasicInfo
+    economic: CountryEconomicData
+    demographic: CountryDemographicData
+    top_industries: List[str] = []
+    major_exports: List[str] = []
+    major_imports: List[str] = []
+    risk_factors: List[str] = []
+    last_updated: Optional[datetime] = None
+
+# ==================== COUNTRY NAME MAPPING (ISO codes) ====================
+
+COUNTRY_NAME_TO_ISO = {
+    "United States of America": "US", "United States": "US", "USA": "US",
+    "United Kingdom": "GB", "UK": "GB", "Great Britain": "GB",
+    "China": "CN", "People's Republic of China": "CN",
+    "Russia": "RU", "Russian Federation": "RU",
+    "South Korea": "KR", "Republic of Korea": "KR", "Korea": "KR",
+    "North Korea": "KP", "Democratic People's Republic of Korea": "KP",
+    "Taiwan": "TW", "Republic of China": "TW",
+    "Vietnam": "VN", "Viet Nam": "VN",
+    "Iran": "IR", "Islamic Republic of Iran": "IR",
+    "Syria": "SY", "Syrian Arab Republic": "SY",
+    "Venezuela": "VE", "Bolivarian Republic of Venezuela": "VE",
+    "Bolivia": "BO", "Plurinational State of Bolivia": "BO",
+    "Tanzania": "TZ", "United Republic of Tanzania": "TZ",
+    "Czech Republic": "CZ", "Czechia": "CZ",
+    "UAE": "AE", "United Arab Emirates": "AE",
+    "Saudi Arabia": "SA", "Kingdom of Saudi Arabia": "SA",
+    "Ivory Coast": "CI", "Côte d'Ivoire": "CI",
+    "Democratic Republic of the Congo": "CD", "DRC": "CD", "Congo (Kinshasa)": "CD",
+    "Republic of the Congo": "CG", "Congo (Brazzaville)": "CG",
+    "Laos": "LA", "Lao People's Democratic Republic": "LA",
+    "Brunei": "BN", "Brunei Darussalam": "BN",
+    "Palestine": "PS", "State of Palestine": "PS",
+    "Hong Kong": "HK",
+    "Macau": "MO", "Macao": "MO",
+}
+
+# World Bank indicator codes
+WORLD_BANK_INDICATORS = {
+    "gdp": "NY.GDP.MKTP.CD",
+    "gdp_per_capita": "NY.GDP.PCAP.CD",
+    "gdp_growth": "NY.GDP.MKTP.KD.ZG",
+    "inflation": "FP.CPI.TOTL.ZG",
+    "unemployment": "SL.UEM.TOTL.ZS",
+    "population": "SP.POP.TOTL",
+    "population_growth": "SP.POP.GROW",
+    "life_expectancy": "SP.DYN.LE00.IN",
+    "exports": "NE.EXP.GNFS.CD",
+    "imports": "NE.IMP.GNFS.CD",
+    "fdi": "BX.KLT.DINV.CD.WD",
+    "external_debt": "DT.DOD.DECT.CD",
+    "literacy": "SE.ADT.LITR.ZS",
+    "urban_population": "SP.URB.TOTL.IN.ZS",
+    "fertility_rate": "SP.DYN.TFRT.IN",
+}
+
 # ==================== MAJOR PORTS DATA ====================
 
 MAJOR_SEAPORTS = [
