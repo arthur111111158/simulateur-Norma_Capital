@@ -5,6 +5,7 @@ Build a "Bloomberg-like Terminal" covering:
 - Global stocks (US, Europe, Asia) + Commodities + Forex with real-time prices and historicals
 - Real-time global news with automatic asset tagging
 - World Map showing conflicts, geopolitical events, sanctions with impact scoring
+- **Global Shipping Routes** - Maritime and Air Cargo routes with volume data
 - Supply Chain Graph showing company relationships (suppliers/customers) with risk analysis
 - Advanced Technical Indicators for trading signals
 - **Options Chain data** for stock options (calls/puts)
@@ -19,6 +20,7 @@ Build a "Bloomberg-like Terminal" covering:
   - Yahoo Finance (real-time market data - 163+ global stocks, options, earnings)
   - NewsAPI (news aggregation - LIVE with MongoDB cache)
   - GDELT GEO API (geopolitical events - LIVE with MongoDB cache)
+  - Static Shipping Data (27 seaports, 20 airports, 18 routes with dynamic disruption analysis)
 
 ## User Personas
 1. **Financial Analysts**: Need comprehensive market data and news in one terminal
@@ -26,42 +28,55 @@ Build a "Bloomberg-like Terminal" covering:
 3. **Risk Analysts**: Focus on geopolitical impacts and supply chain vulnerabilities
 4. **Traders**: Need real-time quotes, technical indicators, and market movers
 5. **Options Traders**: Require options chain data (calls/puts, IV, strike prices)
+6. **Logistics Analysts**: Need shipping routes and disruption monitoring
 
 ## What's Been Implemented
+
+### 2026-02-27 - Global Shipping Routes Visualization
+- **Maritime Shipping Routes**:
+  - 9 major maritime routes (Asia-Europe, Transpacific, Transatlantic, etc.)
+  - 27 major seaports worldwide (Shanghai, Singapore, Rotterdam, etc.)
+  - Volume data in TEU (Twenty-foot Equivalent Units)
+  - Strategic chokepoints identification (Suez, Malacca, Panama, Hormuz, etc.)
+  
+- **Air Cargo Routes**:
+  - 9 major air cargo routes (Hong Kong-Frankfurt, Shanghai-Anchorage-Memphis, etc.)
+  - 20 cargo airports worldwide (Memphis, Anchorage, Hong Kong, Frankfurt, etc.)
+  - Volume data in tonnes/year
+  
+- **Conflict Integration**:
+  - Dynamic disruption level calculation based on current conflicts
+  - Routes affected: Asia-Europe via Suez (40% - Red Sea/Yemen), Persian Gulf-Asia (100% - Iran), Intra-Asia (100% - South China Sea/Taiwan)
+  - Volume at risk calculation (currently 57.6% of global shipping volume)
+  
+- **UI Features**:
+  - Layer tabs: All, Maritime, Air Cargo, Conflicts
+  - Ports toggle to show/hide port markers
+  - Route details panel with origin, destination, distance, transit time, volume, chokepoints
+  - Risk Summary with high/medium/low risk routes and critical chokepoints
+  - Interactive legend
 
 ### 2026-02-27 - Options Chain, Earnings Calendar, Real-time Updates
 - **Options Chain Feature**:
   - `/api/options/expirations/{symbol}` - Get available expiration dates
   - `/api/options/chain/{symbol}?expiration={date}` - Get calls/puts with strike, bid, ask, IV, OI
   - OptionsChain component displays on Quote page for stock symbols
-  - Tabs for Calls and Puts with ITM/OTM badges
   
 - **Earnings Calendar Feature**:
   - `/api/earnings/calendar?days={n}&region={region}` - Get upcoming earnings
   - `/api/earnings/symbol/{symbol}` - Get next earnings for specific symbol
   - New EarningsPage with grouped events by date
-  - Region filter (US, Europe, Asia) and days selector
-  - MongoDB caching for earnings data
   
 - **Real-time Updates**:
   - WebSocket endpoint at `/ws/quotes` for real-time price updates
-  - Polling fallback in useWebSocket hook for environments where WebSocket doesn't work
-  - 10-second polling interval for subscribed symbols
-  
-- **Enhanced Supply Chain**:
-  - yfinance fallback for stocks not in predefined list
-  - Returns institutional holders and sector-based suppliers/customers
-  - Works for any stock symbol now (JNJ, COST, etc.)
+  - Polling fallback for environments where WebSocket doesn't work
 
-### 2026-02-27 - Global Market Coverage & Technical Analysis
-- **163 Global Stocks Coverage**:
-  - 48 US stocks (S&P 500 components, major tech, finance, healthcare)
-  - 55 European stocks (CAC 40, DAX, FTSE 100, Euro Stoxx components)
-  - 60 Asian stocks (Nikkei, KOSPI, Hang Seng, Taiwan, India, Singapore, Australia)
-- **Global Indices**: S&P 500, Dow Jones, NASDAQ, CAC 40, DAX, FTSE 100, Nikkei, Hang Seng, Shanghai Composite
-- **Technical Indicators**: RSI, MACD, SMA, EMA, Bollinger Bands, ATR, Stochastic, OBV
-- **Dynamic Impact Scoring**: Score 0-100 based on geopolitical risk exposure
-- **MongoDB Caching**: News (1 hour), Conflicts (2 hours), Earnings (6 hours)
+### Previous Implementations
+- 163 Global Stocks Coverage (US, Europe, Asia)
+- Technical Indicators (RSI, MACD, SMA, EMA, Bollinger Bands, ATR)
+- Dynamic Impact Scoring (0-100 based on geopolitical risk)
+- MongoDB Caching for news/conflicts/earnings
+- Supply Chain Graph with yfinance fallback
 
 ## Backend APIs
 
@@ -75,39 +90,40 @@ Build a "Bloomberg-like Terminal" covering:
 - `GET /api/market/indices?region=...` - Global indices
 - `GET /api/market/universe` - Full list of instruments
 
-### Options Chain (NEW)
+### Options Chain
 - `GET /api/options/expirations/{symbol}` - Available expiration dates
 - `GET /api/options/chain/{symbol}?expiration={date}` - Options chain (calls/puts)
 
-### Earnings Calendar (NEW)
+### Earnings Calendar
 - `GET /api/earnings/calendar?days={n}&region={region}` - Upcoming earnings
 - `GET /api/earnings/symbol/{symbol}` - Earnings for specific symbol
 
+### Shipping Routes (NEW)
+- `GET /api/shipping/routes?route_type={all|maritime|air}` - Get shipping routes with disruption analysis
+- `GET /api/shipping/ports` - Get all major ports and airports
+- `GET /api/shipping/stats` - Get shipping statistics and risk summary
+
 ### News & Conflicts
-- `GET /api/news` - News with filters (NewsAPI - LIVE, MongoDB cached)
+- `GET /api/news` - News with filters (NewsAPI - LIVE)
 - `GET /api/news/breaking` - Breaking headlines
-- `GET /api/conflicts` - Geopolitical events (GDELT + Baseline - LIVE, MongoDB cached)
+- `GET /api/conflicts` - Geopolitical events (GDELT + Baseline - LIVE)
 - `GET /api/conflicts/{id}` - Conflict detail
 
 ### Analysis
 - `GET /api/impact/{symbol}` - Dynamic impact score
-- `GET /api/supplychain/{symbol}` - Company supply chain (predefined + yfinance fallback)
+- `GET /api/supplychain/{symbol}` - Company supply chain
 
-### User Data
-- `GET/POST/DELETE /api/watchlist` - Watchlist CRUD
-- `GET /api/screener?...` - Asset screening
-
-### WebSocket (NEW)
+### WebSocket
 - `WS /ws/quotes` - Real-time quote updates (with polling fallback)
 
 ## Frontend Pages
 - `/` - Dashboard with global markets overview
 - `/quote?symbol={symbol}` - Quote page with chart, technicals, options chain
 - `/news` - News terminal
-- `/worldmap` - Interactive conflict map
+- `/worldmap` - Interactive map with conflicts AND shipping routes (NEW)
 - `/supplychain?symbol={symbol}` - Supply chain graph
 - `/screener` - Asset screener
-- `/earnings` - Earnings calendar (NEW)
+- `/earnings` - Earnings calendar
 - `/settings` - User settings
 
 ## 3rd Party Integrations Status
@@ -117,6 +133,7 @@ Build a "Bloomberg-like Terminal" covering:
 | NewsAPI | LIVE | Real-time news with MongoDB cache |
 | GDELT GEO API | LIVE | Geopolitical events with MongoDB cache |
 | MongoDB | LIVE | Watchlist + News/Conflicts/Earnings caching |
+| Shipping Data | STATIC | 27 seaports, 20 airports, 18 routes (disruption calculated dynamically) |
 
 ## Prioritized Backlog
 
@@ -131,12 +148,15 @@ Build a "Bloomberg-like Terminal" covering:
 - [x] Technical indicators (RSI, MACD, SMA, Bollinger)
 - [x] Dynamic impact scoring
 - [x] MongoDB caching for news/conflicts
-- [x] **Options chain data**
-- [x] **Earnings calendar**
-- [x] **WebSocket for real-time updates**
-- [x] **Enhanced supply chain for all stocks**
+- [x] Options chain data
+- [x] Earnings calendar
+- [x] WebSocket for real-time updates
+- [x] **Maritime shipping routes + volumes**
+- [x] **Air cargo routes + volumes**
+- [x] **Route disruption analysis based on conflicts**
 
 ### P1 - High Priority (Next)
+- [ ] Real-time shipping data via AIS API (MarineTraffic/VesselFinder)
 - [ ] User authentication (JWT/OAuth)
 - [ ] Price alerts system with notifications
 - [ ] Export to CSV functionality
@@ -157,7 +177,7 @@ Build a "Bloomberg-like Terminal" covering:
 ## Known Limitations
 1. **Quote Page Load Time**: 10-30 seconds due to multiple Yahoo Finance API calls
 2. **WebSocket**: May not work through some proxies - polling fallback available
-3. **Earnings Data**: Limited to 60 days ahead, some stocks may not have data
+3. **Shipping Data**: Static routes/ports (not real-time vessel tracking)
 
 ## Environment Configuration
 - NewsAPI Key: Configured in backend/.env
@@ -165,6 +185,6 @@ Build a "Bloomberg-like Terminal" covering:
 - MongoDB: Configured in backend/.env
 
 ## Test Results
-- Backend: 100% pass (16/16 tests)
+- Backend: 100% pass (15/15 shipping tests + 16/16 options/earnings tests)
 - Frontend: 100% (all features working)
-- Last test report: /app/test_reports/iteration_3.json
+- Last test report: /app/test_reports/iteration_4.json
