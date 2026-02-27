@@ -2941,6 +2941,12 @@ async def get_company_supply_chain(symbol: str):
     """Get supply chain relationships for a company"""
     return get_supply_chain(symbol.upper())
 
+# Shareholders Routes
+@api_router.get("/shareholders/{symbol}", response_model=ShareholdersData)
+async def get_shareholders(symbol: str):
+    """Get shareholders data for a company"""
+    return await fetch_shareholders_data(symbol.upper())
+
 # Impact Score Routes
 @api_router.get("/impact/{symbol}", response_model=Optional[ImpactScore])
 async def get_impact_score(symbol: str):
