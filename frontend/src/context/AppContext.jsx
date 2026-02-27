@@ -459,6 +459,7 @@ export const AppProvider = ({ children }) => {
     getHistory,
     getSupplyChain,
     getShareholders,
+    getShareholdersHistory,
     searchAssets,
     screenAssets,
     getTechnicalIndicators,
