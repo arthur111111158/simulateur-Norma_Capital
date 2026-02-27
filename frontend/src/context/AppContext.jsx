@@ -194,6 +194,41 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // ==================== NEW: SHIPPING DATA ====================
+  
+  // Get shipping routes
+  const getShippingRoutes = async (routeType = 'all') => {
+    try {
+      const response = await axios.get(`${API}/shipping/routes?route_type=${routeType}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching shipping routes:', error);
+      return { routes: [], stats: {} };
+    }
+  };
+
+  // Get shipping ports
+  const getShippingPorts = async () => {
+    try {
+      const response = await axios.get(`${API}/shipping/ports`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching shipping ports:', error);
+      return { seaports: [], airports: [] };
+    }
+  };
+
+  // Get shipping stats
+  const getShippingStats = async () => {
+    try {
+      const response = await axios.get(`${API}/shipping/stats`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching shipping stats:', error);
+      return null;
+    }
+  };
+
   // ==================== NEW: OPTIONS CHAIN ====================
   
   // Get options expirations
