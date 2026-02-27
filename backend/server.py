@@ -156,7 +156,7 @@ EUROPEAN_STOCKS = {
     "SOLB.PA": {"name": "Solvay SA", "sector": "Basic Materials", "region": "Europe"},
     "SPIE.PA": {"name": "Spie SA", "sector": "Industrials", "region": "Europe"},
     "STLAP.PA": {"name": "Stellantis NV", "sector": "Consumer Cyclical", "region": "Europe"},
-    "STM.PA": {"name": "STMicroelectronics", "sector": "Technology", "region": "Europe"},
+    "STMPA.PA": {"name": "STMicroelectronics", "sector": "Technology", "region": "Europe"},
     "SU.PA": {"name": "Schneider Electric", "sector": "Industrials", "region": "Europe"},
     "SW.PA": {"name": "Sodexo SA", "sector": "Industrials", "region": "Europe"},
     "TEP.PA": {"name": "Teleperformance", "sector": "Industrials", "region": "Europe"},
