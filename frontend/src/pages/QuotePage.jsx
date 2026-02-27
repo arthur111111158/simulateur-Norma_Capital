@@ -824,32 +824,6 @@ const QuotePage = () => {
                               <PieChart>
                                 <Pie
                                   data={(() => {
-                                    const holders = shareholders.major_holders?.length > 0 
-                                      ? shareholders.major_holders 
-                                      : shareholders.institutional_holders;
-                                    const topHolders = holders?.slice(0, 5) || [];
-                                    const topTotal = topHolders.reduce((sum, h) => sum + (h.percent_held || 0), 0);
-                                    const othersPercent = Math.max(0, 100 - topTotal);
-                                    
-                                    const data = topHolders.map((h, i) => ({
-                                      name: h.name?.split(' ')[0] || `Holder ${i+1}`,
-                                      value: h.percent_held || 0,
-                                      type: h.holder_type
-                                    }));
-                                    
-                                    if (othersPercent > 0) {
-                                      data.push({ name: 'Others/Float', value: othersPercent, type: 'other' });
-                                    }
-                                    return data;
-                                  })()}
-                                  cx="50%"
-                                  cy="50%"
-                                  innerRadius={35}
-                                  outerRadius={70}
-                                  paddingAngle={2}
-                                  dataKey="value"
-                                >
-                                  {(() => {
                                     const COLORS = {
                                       family: '#a855f7',      // Purple
                                       government: '#3b82f6',  // Blue
@@ -864,10 +838,27 @@ const QuotePage = () => {
                                       : shareholders.institutional_holders;
                                     const topHolders = holders?.slice(0, 5) || [];
                                     const topTotal = topHolders.reduce((sum, h) => sum + (h.percent_held || 0), 0);
-                                    const hasOthers = (100 - topTotal) > 0;
+                                    const othersPercent = Math.max(0, 100 - topTotal);
                                     
-                                    return [...topHolders, ...(hasOthers ? [{ holder_type: 'other' }] : [])].map((h, i) => (
-                                      <Cell key={i} fill={COLORS[h.holder_type] || COLORS.institutional} />
+                                    const data = topHolders.map((h, i) => ({
+                                      name: h.name?.split(' ')[0] || `Holder ${i+1}`,
+                                      value: h.percent_held || 0,
+                                      type: h.holder_type,
+                                      fill: COLORS[h.holder_type] || COLORS.institutional
+                                    }));
+                                    
+                                    if (othersPercent > 0) {
+                                      data.push({ name: 'Others/Float', value: othersPercent, type: 'other', fill: COLORS.other });
+                                    }
+                                    return data;
+                                  })()}
+                                  cx="50%"
+                                  cy="50%"
+                                  innerRadius={35}
+                                  outerRadius={70}
+                                  paddingAngle={2}
+                                  dataKey="value"
+                                />
                                     ));
                                   })()}
                                 </Pie>
