@@ -329,23 +329,49 @@ const QuotePage = () => {
                     <BarChart3 className="w-4 h-4 text-orange-500" />
                     Price Chart
                   </CardTitle>
-                  <div className="flex gap-1">
-                    {periods.map((p) => (
+                  <div className="flex items-center gap-4">
+                    {/* Chart Type Toggle */}
+                    <div className="flex gap-1 bg-zinc-900 rounded p-0.5">
                       <Button
-                        key={p.value}
-                        variant={period === p.value ? 'default' : 'ghost'}
+                        variant={chartType === 'area' ? 'default' : 'ghost'}
                         size="sm"
-                        className={`text-xs px-2 h-6 ${period === p.value ? 'bg-orange-500' : ''}`}
-                        onClick={() => { setPeriod(p.value); setIntervalState(p.interval); }}
-                        data-testid={`period-btn-${p.value}`}
+                        className={`text-xs px-2 h-6 ${chartType === 'area' ? 'bg-blue-600' : ''}`}
+                        onClick={() => setChartType('area')}
+                        data-testid="chart-type-area"
                       >
-                        {p.label}
+                        <LineChartIcon className="w-3 h-3 mr-1" />
+                        Line
                       </Button>
-                    ))}
+                      <Button
+                        variant={chartType === 'candlestick' ? 'default' : 'ghost'}
+                        size="sm"
+                        className={`text-xs px-2 h-6 ${chartType === 'candlestick' ? 'bg-blue-600' : ''}`}
+                        onClick={() => setChartType('candlestick')}
+                        data-testid="chart-type-candlestick"
+                      >
+                        <CandlestickChart className="w-3 h-3 mr-1" />
+                        Candles
+                      </Button>
+                    </div>
+                    {/* Period Selector */}
+                    <div className="flex gap-1">
+                      {periods.map((p) => (
+                        <Button
+                          key={p.value}
+                          variant={period === p.value ? 'default' : 'ghost'}
+                          size="sm"
+                          className={`text-xs px-2 h-6 ${period === p.value ? 'bg-orange-500' : ''}`}
+                          onClick={() => { setPeriod(p.value); setIntervalState(p.interval); }}
+                          data-testid={`period-btn-${p.value}`}
+                        >
+                          {p.label}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="p-4">
-                  {history?.data && (
+                  {history?.data && chartType === 'area' && (
                     <ResponsiveContainer width="100%" height={400}>
                       <AreaChart data={history.data}>
                         <defs>
@@ -391,6 +417,99 @@ const QuotePage = () => {
                           fill="url(#colorPrice)"
                         />
                       </AreaChart>
+                    </ResponsiveContainer>
+                  )}
+                  
+                  {/* Candlestick Chart */}
+                  {history?.data && chartType === 'candlestick' && (
+                    <ResponsiveContainer width="100%" height={400}>
+                      <ComposedChart data={history.data}>
+                        <CartesianGrid stroke="#27272a" strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="date" 
+                          stroke="#52525b" 
+                          tick={{ fill: '#52525b', fontSize: 10 }}
+                          tickFormatter={(value) => {
+                            const date = new Date(value);
+                            if (period === '1d') return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                          }}
+                        />
+                        <YAxis 
+                          stroke="#52525b" 
+                          tick={{ fill: '#52525b', fontSize: 10 }}
+                          domain={['dataMin', 'dataMax']}
+                          tickFormatter={(value) => value.toFixed(2)}
+                        />
+                        <Tooltip
+                          contentStyle={{ 
+                            backgroundColor: '#18181b', 
+                            border: '1px solid #27272a',
+                            borderRadius: '4px',
+                            fontSize: '12px'
+                          }}
+                          labelStyle={{ color: '#a1a1aa' }}
+                          content={({ active, payload, label }) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload;
+                              const isGreen = data.close >= data.open;
+                              return (
+                                <div className="bg-zinc-900 border border-zinc-700 rounded p-2 text-xs">
+                                  <p className="text-zinc-400 mb-1">{new Date(label).toLocaleDateString()}</p>
+                                  <p className="text-zinc-300">Open: <span className="text-white">${data.open?.toFixed(2)}</span></p>
+                                  <p className="text-zinc-300">High: <span className="text-green-400">${data.high?.toFixed(2)}</span></p>
+                                  <p className="text-zinc-300">Low: <span className="text-red-400">${data.low?.toFixed(2)}</span></p>
+                                  <p className="text-zinc-300">Close: <span className={isGreen ? 'text-green-400' : 'text-red-400'}>${data.close?.toFixed(2)}</span></p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        {/* Candlestick bars using Bar component with custom shape */}
+                        <Bar
+                          dataKey="close"
+                          shape={(props) => {
+                            const { x, y, width, height, payload } = props;
+                            if (!payload) return null;
+                            
+                            const { open, high, low, close } = payload;
+                            const isGreen = close >= open;
+                            const color = isGreen ? '#22c55e' : '#ef4444';
+                            
+                            // Calculate positions based on scale
+                            const yScale = props.background?.height / (props.background?.y || 1);
+                            const candleWidth = Math.max(width * 0.7, 3);
+                            
+                            // Body
+                            const bodyTop = isGreen ? y : y + height;
+                            const bodyHeight = Math.abs(height) || 1;
+                            
+                            return (
+                              <g>
+                                {/* Wick */}
+                                <line
+                                  x1={x + width / 2}
+                                  y1={y - (close - high) * (height / (close - open || 1))}
+                                  x2={x + width / 2}
+                                  y2={y + height + (low - open) * (height / (close - open || 1))}
+                                  stroke={color}
+                                  strokeWidth={1}
+                                />
+                                {/* Body */}
+                                <rect
+                                  x={x + (width - candleWidth) / 2}
+                                  y={Math.min(y, y + height)}
+                                  width={candleWidth}
+                                  height={Math.max(Math.abs(height), 2)}
+                                  fill={color}
+                                  stroke={color}
+                                />
+                              </g>
+                            );
+                          }}
+                        />
+                      </ComposedChart>
                     </ResponsiveContainer>
                   )}
                 </CardContent>
