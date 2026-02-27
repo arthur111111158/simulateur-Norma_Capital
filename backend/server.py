@@ -519,6 +519,7 @@ class NewsArticle(BaseModel):
     tags: List[str] = []
     sentiment: Optional[str] = None
     country: Optional[str] = None
+    language: Optional[str] = None  # 'en' or 'fr'
 
 class ConflictEvent(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
