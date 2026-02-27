@@ -534,36 +534,36 @@ def parse_gdelt_geo_to_conflict(feature: Dict[str, Any], index: int) -> Optional
         return None
 
 async def fetch_conflicts() -> List[ConflictEvent]:
-    """Fetch geopolitical events from GDELT API with fallback to mock data"""
+    """Fetch geopolitical events from GDELT API with fallback to baseline data"""
     try:
-        # Fetch from GDELT
-        gdelt_articles = await fetch_gdelt_events()
+        # Fetch from GDELT GEO API
+        gdelt_features = await fetch_gdelt_events()
         
-        if gdelt_articles:
+        if gdelt_features:
             conflicts = []
-            seen_titles = set()
+            seen_countries = set()
             
-            for i, article in enumerate(gdelt_articles):
-                conflict = parse_gdelt_to_conflict(article, i)
-                if conflict and conflict.title not in seen_titles:
-                    seen_titles.add(conflict.title)
+            for i, feature in enumerate(gdelt_features):
+                conflict = parse_gdelt_geo_to_conflict(feature, i)
+                if conflict and conflict.country not in seen_countries:
+                    seen_countries.add(conflict.country)
                     conflicts.append(conflict)
             
-            # Add some baseline persistent conflicts that are always relevant
+            # Add baseline conflicts for countries not covered by GDELT
             baseline_conflicts = get_baseline_conflicts()
-            
-            # Merge: GDELT events first, then baseline conflicts not already covered
-            covered_countries = {c.country for c in conflicts}
             for bc in baseline_conflicts:
-                if bc.country not in covered_countries:
+                if bc.country not in seen_countries:
                     conflicts.append(bc)
+                    seen_countries.add(bc.country)
             
             if conflicts:
-                logger.info(f"Returning {len(conflicts)} conflicts from GDELT + baseline")
-                return conflicts[:20]  # Limit to 20 events
+                # Sort by impact score descending
+                conflicts.sort(key=lambda x: x.impact_score, reverse=True)
+                logger.info(f"Returning {len(conflicts)} conflicts (GDELT + baseline)")
+                return conflicts[:20]
         
         # Fallback to baseline if GDELT fails
-        logger.info("Using baseline conflicts (GDELT unavailable or no results)")
+        logger.info("Using baseline conflicts (GDELT unavailable)")
         return get_baseline_conflicts()
         
     except Exception as e:
