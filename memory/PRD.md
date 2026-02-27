@@ -7,13 +7,16 @@ Build a "Bloomberg-like Terminal" covering:
 - World Map showing conflicts, geopolitical events, sanctions with impact scoring
 - Supply Chain Graph showing company relationships (suppliers/customers) with risk analysis
 - Advanced Technical Indicators for trading signals
+- **Options Chain data** for stock options (calls/puts)
+- **Earnings Calendar** for upcoming company earnings announcements
+- **Real-time updates** via WebSocket with polling fallback
 
 ## Architecture
 - **Frontend**: React 18 + Tailwind CSS + Shadcn/UI + ReactFlow + React Simple Maps + Recharts
 - **Backend**: FastAPI + Motor (MongoDB async)
-- **Database**: MongoDB (with caching for news/conflicts)
+- **Database**: MongoDB (with caching for news/conflicts/earnings)
 - **Data Sources**: 
-  - Yahoo Finance (real-time market data - 163+ global stocks)
+  - Yahoo Finance (real-time market data - 163+ global stocks, options, earnings)
   - NewsAPI (news aggregation - LIVE with MongoDB cache)
   - GDELT GEO API (geopolitical events - LIVE with MongoDB cache)
 
@@ -22,8 +25,33 @@ Build a "Bloomberg-like Terminal" covering:
 2. **Portfolio Managers**: Require asset screening and risk assessment
 3. **Risk Analysts**: Focus on geopolitical impacts and supply chain vulnerabilities
 4. **Traders**: Need real-time quotes, technical indicators, and market movers
+5. **Options Traders**: Require options chain data (calls/puts, IV, strike prices)
 
 ## What's Been Implemented
+
+### 2026-02-27 - Options Chain, Earnings Calendar, Real-time Updates
+- **Options Chain Feature**:
+  - `/api/options/expirations/{symbol}` - Get available expiration dates
+  - `/api/options/chain/{symbol}?expiration={date}` - Get calls/puts with strike, bid, ask, IV, OI
+  - OptionsChain component displays on Quote page for stock symbols
+  - Tabs for Calls and Puts with ITM/OTM badges
+  
+- **Earnings Calendar Feature**:
+  - `/api/earnings/calendar?days={n}&region={region}` - Get upcoming earnings
+  - `/api/earnings/symbol/{symbol}` - Get next earnings for specific symbol
+  - New EarningsPage with grouped events by date
+  - Region filter (US, Europe, Asia) and days selector
+  - MongoDB caching for earnings data
+  
+- **Real-time Updates**:
+  - WebSocket endpoint at `/ws/quotes` for real-time price updates
+  - Polling fallback in useWebSocket hook for environments where WebSocket doesn't work
+  - 10-second polling interval for subscribed symbols
+  
+- **Enhanced Supply Chain**:
+  - yfinance fallback for stocks not in predefined list
+  - Returns institutional holders and sector-based suppliers/customers
+  - Works for any stock symbol now (JNJ, COST, etc.)
 
 ### 2026-02-27 - Global Market Coverage & Technical Analysis
 - **163 Global Stocks Coverage**:
@@ -31,39 +59,9 @@ Build a "Bloomberg-like Terminal" covering:
   - 55 European stocks (CAC 40, DAX, FTSE 100, Euro Stoxx components)
   - 60 Asian stocks (Nikkei, KOSPI, Hang Seng, Taiwan, India, Singapore, Australia)
 - **Global Indices**: S&P 500, Dow Jones, NASDAQ, CAC 40, DAX, FTSE 100, Nikkei, Hang Seng, Shanghai Composite
-- **Technical Indicators**:
-  - RSI (14-period)
-  - MACD (12/26 with signal line)
-  - SMA (20, 50, 200)
-  - EMA (12, 26)
-  - Bollinger Bands (20-period, 2 std dev)
-  - ATR (14-period)
-  - Stochastic Oscillator
-  - OBV (On-Balance Volume)
-  - Trading Signal (BUY/SELL/HOLD)
-  - Trend Detection (Bullish/Bearish/Neutral)
-- **Dynamic Impact Scoring**:
-  - Score 0-100 based on geopolitical risk exposure
-  - Risk factors from conflicts affecting assets
-  - Risk level classification (LOW/MEDIUM/HIGH/CRITICAL)
-- **MongoDB Caching**:
-  - News articles cached for 1 hour
-  - Conflict data cached for 2 hours
-  - Reduces API calls and improves performance
-
-### 2026-02-27 - NewsAPI & GDELT Integration
-- Integrated NewsAPI for real-time news with automatic asset tagging
-- Integrated GDELT GEO API for live geopolitical events
-- News articles tagged with company tickers and macro topics
-- Conflicts include real-time data from GDELT merged with baseline events
-
-### Phase 1 - MVP Complete
-- **Dashboard**: Global markets overview (US/Europe/Asia), watchlist, news, market movers, geopolitical alerts
-- **Quote Page**: Real-time quotes, price charts, technical analysis, impact score, supply chain preview
-- **News Terminal**: Full news feed with search, filters, trending topics
-- **World Map**: Interactive conflict map with severity markers, impact scores, transmission channels
-- **Supply Chain**: Company relationship graph with suppliers/customers, risk levels
-- **Screener**: Global stock/commodity/forex filtering with region and sector filters
+- **Technical Indicators**: RSI, MACD, SMA, EMA, Bollinger Bands, ATR, Stochastic, OBV
+- **Dynamic Impact Scoring**: Score 0-100 based on geopolitical risk exposure
+- **MongoDB Caching**: News (1 hour), Conflicts (2 hours), Earnings (6 hours)
 
 ## Backend APIs
 
@@ -71,11 +69,19 @@ Build a "Bloomberg-like Terminal" covering:
 - `GET /api/market/quote/{symbol}` - Real-time quote
 - `GET /api/market/quotes?symbols=...` - Multiple quotes
 - `GET /api/market/history/{symbol}?period=&interval=` - Historical OHLCV
-- `GET /api/market/technical/{symbol}` - Technical indicators (RSI, MACD, SMA, Bollinger, Signal, Trend)
-- `GET /api/market/search?q=...` - Asset search across all markets
-- `GET /api/market/movers?region=...` - Top gainers/losers by region
-- `GET /api/market/indices?region=...` - Global indices by region
-- `GET /api/market/universe` - Full list of available instruments
+- `GET /api/market/technical/{symbol}` - Technical indicators
+- `GET /api/market/search?q=...` - Asset search
+- `GET /api/market/movers?region=...` - Top gainers/losers
+- `GET /api/market/indices?region=...` - Global indices
+- `GET /api/market/universe` - Full list of instruments
+
+### Options Chain (NEW)
+- `GET /api/options/expirations/{symbol}` - Available expiration dates
+- `GET /api/options/chain/{symbol}?expiration={date}` - Options chain (calls/puts)
+
+### Earnings Calendar (NEW)
+- `GET /api/earnings/calendar?days={n}&region={region}` - Upcoming earnings
+- `GET /api/earnings/symbol/{symbol}` - Earnings for specific symbol
 
 ### News & Conflicts
 - `GET /api/news` - News with filters (NewsAPI - LIVE, MongoDB cached)
@@ -84,20 +90,33 @@ Build a "Bloomberg-like Terminal" covering:
 - `GET /api/conflicts/{id}` - Conflict detail
 
 ### Analysis
-- `GET /api/impact/{symbol}` - Dynamic impact score with risk factors
-- `GET /api/supplychain/{symbol}` - Company supply chain relationships
+- `GET /api/impact/{symbol}` - Dynamic impact score
+- `GET /api/supplychain/{symbol}` - Company supply chain (predefined + yfinance fallback)
 
 ### User Data
 - `GET/POST/DELETE /api/watchlist` - Watchlist CRUD
-- `GET /api/screener?asset_type=&region=&sector=&min_change=&max_change=` - Asset screening
+- `GET /api/screener?...` - Asset screening
+
+### WebSocket (NEW)
+- `WS /ws/quotes` - Real-time quote updates (with polling fallback)
+
+## Frontend Pages
+- `/` - Dashboard with global markets overview
+- `/quote?symbol={symbol}` - Quote page with chart, technicals, options chain
+- `/news` - News terminal
+- `/worldmap` - Interactive conflict map
+- `/supplychain?symbol={symbol}` - Supply chain graph
+- `/screener` - Asset screener
+- `/earnings` - Earnings calendar (NEW)
+- `/settings` - User settings
 
 ## 3rd Party Integrations Status
 | Integration | Status | Notes |
 |------------|--------|-------|
-| Yahoo Finance | LIVE | 163+ global stocks, indices, commodities, forex |
+| Yahoo Finance | LIVE | 163+ global stocks, indices, commodities, forex, options, earnings |
 | NewsAPI | LIVE | Real-time news with MongoDB cache |
 | GDELT GEO API | LIVE | Geopolitical events with MongoDB cache |
-| MongoDB | LIVE | Watchlist + News/Conflicts caching |
+| MongoDB | LIVE | Watchlist + News/Conflicts/Earnings caching |
 
 ## Prioritized Backlog
 
@@ -108,36 +127,37 @@ Build a "Bloomberg-like Terminal" covering:
 - [x] News feed with tagging (NewsAPI - LIVE)
 - [x] Conflict map (GDELT - LIVE)
 - [x] Supply chain graph
-- [x] **Global stock coverage (US, Europe, Asia)**
-- [x] **Technical indicators (RSI, MACD, SMA, Bollinger)**
-- [x] **Dynamic impact scoring**
-- [x] **MongoDB caching for news/conflicts**
+- [x] Global stock coverage (US, Europe, Asia)
+- [x] Technical indicators (RSI, MACD, SMA, Bollinger)
+- [x] Dynamic impact scoring
+- [x] MongoDB caching for news/conflicts
+- [x] **Options chain data**
+- [x] **Earnings calendar**
+- [x] **WebSocket for real-time updates**
+- [x] **Enhanced supply chain for all stocks**
 
 ### P1 - High Priority (Next)
-- [ ] Real supply chain data (SEC filings parsing)
+- [ ] User authentication (JWT/OAuth)
 - [ ] Price alerts system with notifications
 - [ ] Export to CSV functionality
-- [ ] User authentication (JWT/OAuth)
-- [ ] WebSocket for real-time updates
+- [ ] Portfolio tracking
 
 ### P2 - Medium Priority
-- [ ] Options chain data
-- [ ] Earnings calendar
 - [ ] Custom screener filters
 - [ ] Historical impact score trends
 - [ ] Correlation matrix
+- [ ] Options greeks (delta, gamma, theta, vega)
 
 ### P3 - Nice to Have
 - [ ] Dark/Light theme toggle
 - [ ] Mobile responsive design
 - [ ] Push notifications
 - [ ] Event replay feature
-- [ ] Portfolio tracking
 
 ## Known Limitations
-1. **Supply Chain Data**: Currently using enhanced mock data (not real SEC filing data)
-2. **API Rate Limits**: Yahoo Finance can be slow with many sequential calls
-3. **Quote Page Load Time**: 10-30 seconds due to multiple API calls
+1. **Quote Page Load Time**: 10-30 seconds due to multiple Yahoo Finance API calls
+2. **WebSocket**: May not work through some proxies - polling fallback available
+3. **Earnings Data**: Limited to 60 days ahead, some stocks may not have data
 
 ## Environment Configuration
 - NewsAPI Key: Configured in backend/.env
@@ -145,6 +165,6 @@ Build a "Bloomberg-like Terminal" covering:
 - MongoDB: Configured in backend/.env
 
 ## Test Results
-- Backend: 100% pass (22/22 tests)
-- Frontend: 95% pass (minor cosmetic issues only)
-- Last test report: /app/test_reports/iteration_2.json
+- Backend: 100% pass (16/16 tests)
+- Frontend: 100% (all features working)
+- Last test report: /app/test_reports/iteration_3.json
