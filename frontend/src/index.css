@@ -1,75 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
-    margin: 0;
-    font-family:
-        -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-        "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-        sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-
-code {
-    font-family:
-        source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
-}
-
 @layer base {
     :root {
-        --background: 0 0% 100%;
-        --foreground: 0 0% 3.9%;
-        --card: 0 0% 100%;
-        --card-foreground: 0 0% 3.9%;
-        --popover: 0 0% 100%;
-        --popover-foreground: 0 0% 3.9%;
-        --primary: 0 0% 9%;
+        --background: 240 10% 3.9%;
+        --foreground: 0 0% 98%;
+        --card: 240 10% 3.9%;
+        --card-foreground: 0 0% 98%;
+        --popover: 240 10% 3.9%;
+        --popover-foreground: 0 0% 98%;
+        --primary: 24 95% 53%;
         --primary-foreground: 0 0% 98%;
-        --secondary: 0 0% 96.1%;
-        --secondary-foreground: 0 0% 9%;
-        --muted: 0 0% 96.1%;
-        --muted-foreground: 0 0% 45.1%;
-        --accent: 0 0% 96.1%;
-        --accent-foreground: 0 0% 9%;
+        --secondary: 240 3.7% 15.9%;
+        --secondary-foreground: 0 0% 98%;
+        --muted: 240 3.7% 15.9%;
+        --muted-foreground: 240 5% 64.9%;
+        --accent: 240 3.7% 15.9%;
+        --accent-foreground: 0 0% 98%;
         --destructive: 0 84.2% 60.2%;
         --destructive-foreground: 0 0% 98%;
-        --border: 0 0% 89.8%;
-        --input: 0 0% 89.8%;
-        --ring: 0 0% 3.9%;
-        --chart-1: 12 76% 61%;
-        --chart-2: 173 58% 39%;
-        --chart-3: 197 37% 24%;
-        --chart-4: 43 74% 66%;
-        --chart-5: 27 87% 67%;
-        --radius: 0.5rem;
-    }
-    .dark {
-        --background: 0 0% 3.9%;
-        --foreground: 0 0% 98%;
-        --card: 0 0% 3.9%;
-        --card-foreground: 0 0% 98%;
-        --popover: 0 0% 3.9%;
-        --popover-foreground: 0 0% 98%;
-        --primary: 0 0% 98%;
-        --primary-foreground: 0 0% 9%;
-        --secondary: 0 0% 14.9%;
-        --secondary-foreground: 0 0% 98%;
-        --muted: 0 0% 14.9%;
-        --muted-foreground: 0 0% 63.9%;
-        --accent: 0 0% 14.9%;
-        --accent-foreground: 0 0% 98%;
-        --destructive: 0 62.8% 30.6%;
-        --destructive-foreground: 0 0% 98%;
-        --border: 0 0% 14.9%;
-        --input: 0 0% 14.9%;
-        --ring: 0 0% 83.1%;
-        --chart-1: 220 70% 50%;
-        --chart-2: 160 60% 45%;
-        --chart-3: 30 80% 55%;
-        --chart-4: 280 65% 60%;
-        --chart-5: 340 75% 55%;
+        --border: 240 3.7% 15.9%;
+        --input: 240 3.7% 15.9%;
+        --ring: 24 95% 53%;
+        --chart-1: 24 95% 53%;
+        --chart-2: 142 76% 36%;
+        --chart-3: 0 84% 60%;
+        --chart-4: 217 91% 60%;
+        --chart-5: 280 65% 60%;
+        --radius: 0.25rem;
+        
+        /* Custom colors */
+        --nexus-bg: #09090b;
+        --nexus-surface: #121212;
+        --nexus-card: #18181b;
+        --nexus-highlight: #27272a;
+        --nexus-border: #27272a;
+        --nexus-orange: #f97316;
+        --nexus-green: #22c55e;
+        --nexus-red: #ef4444;
+        --nexus-blue: #3b82f6;
+        --nexus-yellow: #eab308;
     }
 }
 
@@ -77,39 +50,212 @@ code {
     * {
         @apply border-border;
     }
+    
+    html {
+        @apply dark;
+    }
+    
     body {
-        @apply bg-background text-foreground;
+        @apply bg-[#09090b] text-zinc-100 font-sans antialiased;
+        font-family: 'Inter', system-ui, sans-serif;
+    }
+    
+    /* JetBrains Mono for data */
+    .font-mono, code, .data-value, [data-mono="true"] {
+        font-family: 'JetBrains Mono', monospace;
     }
 }
 
-@layer base {
-    [data-debug-wrapper="true"] {
-        display: contents !important;
-    }
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
 
-    [data-debug-wrapper="true"] > * {
-        margin-left: inherit;
-        margin-right: inherit;
-        margin-top: inherit;
-        margin-bottom: inherit;
-        padding-left: inherit;
-        padding-right: inherit;
-        padding-top: inherit;
-        padding-bottom: inherit;
-        column-gap: inherit;
-        row-gap: inherit;
-        gap: inherit;
-        border-left-width: inherit;
-        border-right-width: inherit;
-        border-top-width: inherit;
-        border-bottom-width: inherit;
-        border-left-style: inherit;
-        border-right-style: inherit;
-        border-top-style: inherit;
-        border-bottom-style: inherit;
-        border-left-color: inherit;
-        border-right-color: inherit;
-        border-top-color: inherit;
-        border-bottom-color: inherit;
+::-webkit-scrollbar-track {
+    background: #18181b;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #3f3f46;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #52525b;
+}
+
+/* Custom utility classes */
+@layer utilities {
+    .text-positive {
+        @apply text-emerald-500;
     }
+    
+    .text-negative {
+        @apply text-red-500;
+    }
+    
+    .text-data {
+        @apply font-mono text-zinc-100;
+    }
+    
+    .bg-nexus {
+        @apply bg-[#09090b];
+    }
+    
+    .bg-nexus-surface {
+        @apply bg-[#121212];
+    }
+    
+    .bg-nexus-card {
+        @apply bg-[#18181b];
+    }
+    
+    .border-nexus {
+        @apply border-[#27272a];
+    }
+    
+    .nexus-card {
+        @apply bg-zinc-950/50 border border-zinc-800 rounded-sm backdrop-blur-sm;
+    }
+    
+    .nexus-button {
+        @apply rounded-sm font-medium tracking-wide uppercase text-xs px-3 py-1.5 transition-colors duration-75;
+    }
+    
+    .nexus-input {
+        @apply bg-zinc-900 border-zinc-800 focus:ring-orange-500/50 rounded-sm font-mono text-sm;
+    }
+    
+    .ticker-positive {
+        @apply text-emerald-500 font-mono;
+    }
+    
+    .ticker-negative {
+        @apply text-red-500 font-mono;
+    }
+    
+    .ticker-neutral {
+        @apply text-zinc-400 font-mono;
+    }
+    
+    /* Grid layouts */
+    .bento-grid {
+        @apply grid gap-2 md:gap-3;
+    }
+    
+    /* Glow effects */
+    .glow-orange {
+        box-shadow: 0 0 20px rgba(249, 115, 22, 0.15);
+    }
+    
+    .glow-green {
+        box-shadow: 0 0 20px rgba(34, 197, 94, 0.15);
+    }
+    
+    .glow-red {
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
+    }
+}
+
+/* Animation classes */
+@keyframes pulse-slow {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+.animate-pulse-slow {
+    animation: pulse-slow 3s ease-in-out infinite;
+}
+
+.animate-blink {
+    animation: blink 1s step-end infinite;
+}
+
+/* Data table styling */
+.data-table {
+    @apply w-full text-xs font-mono;
+}
+
+.data-table th {
+    @apply text-zinc-500 uppercase tracking-wider font-semibold text-left py-2 px-2 border-b border-zinc-800;
+}
+
+.data-table td {
+    @apply py-2 px-2 border-b border-zinc-800/50;
+}
+
+.data-table tr:hover {
+    @apply bg-zinc-800/30;
+}
+
+/* Chart container */
+.chart-container {
+    @apply bg-zinc-950 border border-zinc-800 rounded-sm p-2;
+}
+
+/* Map styling */
+.map-container {
+    @apply bg-zinc-950 border border-zinc-800 rounded-sm overflow-hidden;
+}
+
+/* Badge variants */
+.badge-critical {
+    @apply bg-red-500/20 text-red-400 border border-red-500/30;
+}
+
+.badge-high {
+    @apply bg-orange-500/20 text-orange-400 border border-orange-500/30;
+}
+
+.badge-medium {
+    @apply bg-yellow-500/20 text-yellow-400 border border-yellow-500/30;
+}
+
+.badge-low {
+    @apply bg-emerald-500/20 text-emerald-400 border border-emerald-500/30;
+}
+
+/* Terminal-style blinking cursor */
+.terminal-cursor::after {
+    content: '_';
+    @apply animate-blink text-orange-500;
+}
+
+/* Sidebar styling */
+.sidebar-item {
+    @apply flex items-center gap-3 px-3 py-2.5 text-sm text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 rounded-sm transition-colors duration-75;
+}
+
+.sidebar-item.active {
+    @apply text-zinc-100 bg-zinc-800 border-l-2 border-orange-500;
+}
+
+/* Card header styling */
+.card-header-terminal {
+    @apply flex items-center justify-between px-3 py-2 border-b border-zinc-800 bg-zinc-900/50;
+}
+
+.card-header-title {
+    @apply text-xs font-semibold uppercase tracking-wider text-zinc-400;
+}
+
+/* Live indicator */
+.live-indicator {
+    @apply inline-flex items-center gap-1.5 text-xs;
+}
+
+.live-indicator::before {
+    content: '';
+    @apply w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse;
+}
+
+/* Hide debug wrapper */
+[data-debug-wrapper="true"] {
+    display: contents !important;
 }
