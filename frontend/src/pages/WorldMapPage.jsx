@@ -338,6 +338,31 @@ const WorldMapPage = () => {
     setSelectedRoute(null);
   };
 
+  // Zoom controls
+  const handleZoomIn = useCallback(() => {
+    setZoom(z => Math.min(z * 1.5, 8));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setZoom(z => Math.max(z / 1.5, 1));
+  }, []);
+
+  const handleReset = useCallback(() => {
+    setZoom(1);
+    setCenter([20, 20]);
+  }, []);
+
+  const handleMoveEnd = useCallback(({ coordinates, zoom: newZoom }) => {
+    setCenter(coordinates);
+    setZoom(newZoom);
+  }, []);
+
+  // Zoom to a specific location
+  const zoomToLocation = useCallback((coords, zoomLevel = 4) => {
+    setCenter(coords);
+    setZoom(zoomLevel);
+  }, []);
+
   return (
     <div className="space-y-4" data-testid="worldmap-page">
       {/* Header */}
