@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -32,7 +32,12 @@ import {
   DollarSign,
   Building2,
   Flag,
-  Loader2
+  Loader2,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Newspaper,
+  TrendingUp as Trending
 } from 'lucide-react';
 
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
