@@ -58,21 +58,29 @@ Air Liquide, Airbus, Alstom, Atos, AXA, BNP Paribas, Bouygues, Bureau Veritas, C
   - % held by insiders and institutions
   - List of major holders with type (family, government, institutional, corporate, mutual_fund)
   - Country of holder
-  - Detailed data for 15+ major French companies (LVMH, BNP, Société Générale, Airbus, etc.)
+  - **40+ companies** with detailed shareholder data:
+    - **France**: LVMH, BNP, Société Générale, Airbus, Hermès, Kering, etc.
+    - **Germany (DAX)**: BMW, Volkswagen, Mercedes, SAP, Siemens, Deutsche Bank, Allianz, BASF, Bayer
+    - **UK (FTSE)**: Shell, BP, HSBC, AstraZeneca, GSK, Unilever, Rio Tinto, Barclays, Lloyds
+    - **Switzerland**: Nestlé, Novartis, Roche, UBS
+    - **Netherlands**: ASML, ING
   - Fallback to yfinance institutional_holders for other stocks
 
-- **Enhanced Supply Chain Data**:
-  - Complete supply chain for 15+ major French companies
-  - Includes subsidiaries, suppliers, customers, partners
-  - Risk levels and revenue impact percentages
-  - Examples: LVMH (Sephora, Tiffany, Hennessy), Airbus (Safran, GE, Rolls-Royce)
+- **Pie Chart for Capital Distribution**:
+  - Visual donut chart showing shareholder distribution
+  - Color-coded by holder type:
+    - Purple: Family holdings
+    - Blue: Government holdings
+    - Amber: Institutional investors
+    - Green: Corporate holdings
+    - Gray: Float/Others
+  - Interactive tooltip with percentages
+  - Legend with all holder types
 
-- **UI Updates** (QuotePage.jsx):
-  - New "Major Shareholders" section with icons by holder type
-  - Purple icon for Family holders
-  - Blue icon for Government holders
-  - Amber icon for Institutional holders
-  - Displays % ownership and country
+- **Optimized Page Loading**:
+  - Critical data (quote + chart) loads first (~0.8s)
+  - Secondary data (shareholders, supply chain, technicals) loads in background
+  - Page is usable immediately, additional info appears progressively
 
 ### 2026-02-27 - News Sources Change (Yahoo Finance + Boursorama)
 - **Replaced NewsAPI** with:
