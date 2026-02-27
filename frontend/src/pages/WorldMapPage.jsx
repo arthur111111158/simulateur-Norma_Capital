@@ -79,11 +79,12 @@ const countryCoordinates = {
 };
 
 const WorldMapPage = () => {
-  const { conflicts, getShippingRoutes, getShippingPorts, getShippingStats, getCountryData } = useApp();
+  const { conflicts, news, getShippingRoutes, getShippingPorts, getShippingStats, getCountryData } = useApp();
   const navigate = useNavigate();
   const [selectedConflict, setSelectedConflict] = useState(null);
   const [hoveredConflict, setHoveredConflict] = useState(null);
   const [zoom, setZoom] = useState(1);
+  const [center, setCenter] = useState([20, 20]);
   
   // Shipping state
   const [shippingRoutes, setShippingRoutes] = useState([]);
@@ -99,6 +100,95 @@ const WorldMapPage = () => {
   const [countryData, setCountryData] = useState(null);
   const [loadingCountry, setLoadingCountry] = useState(false);
   const [hoveredCountry, setHoveredCountry] = useState(null);
+
+  // News hotspots - countries most mentioned in news
+  const newsHotspots = useMemo(() => {
+    const countryMentions = {};
+    const countryToCoords = {
+      'US': [-95, 38], 'USA': [-95, 38], 'United States': [-95, 38], 'America': [-95, 38],
+      'China': [104, 35], 'Chinese': [104, 35],
+      'Russia': [100, 60], 'Russian': [100, 60], 'Ukraine': [31, 49], 'Ukrainian': [31, 49],
+      'France': [2, 46], 'French': [2, 46], 'Paris': [2, 48],
+      'Germany': [10, 51], 'German': [10, 51], 'Berlin': [13, 52],
+      'UK': [-2, 54], 'Britain': [-2, 54], 'British': [-2, 54], 'London': [-0.1, 51.5],
+      'Japan': [138, 36], 'Japanese': [138, 36], 'Tokyo': [139.7, 35.7],
+      'India': [78, 22], 'Indian': [78, 22],
+      'Brazil': [-51, -10], 'Brazilian': [-51, -10],
+      'Israel': [35, 31], 'Israeli': [35, 31], 'Gaza': [34.4, 31.5], 'Palestine': [35, 32],
+      'Iran': [53, 32], 'Iranian': [53, 32], 'Tehran': [51, 35.7],
+      'Saudi': [45, 24], 'Arabia': [45, 24], 'Riyadh': [46.7, 24.7],
+      'Taiwan': [121, 24], 'Taiwanese': [121, 24],
+      'Europe': [10, 50], 'European': [10, 50], 'EU': [10, 50],
+      'Middle East': [45, 29], 'Asia': [100, 35], 'Africa': [20, 0],
+      'Mexico': [-102, 23], 'Canada': [-106, 56],
+      'Australia': [134, -25], 'Australian': [134, -25],
+      'Korea': [127, 36], 'Korean': [127, 36], 'Seoul': [127, 37.5],
+      'Italy': [12, 42], 'Italian': [12, 42], 'Rome': [12.5, 41.9],
+      'Spain': [-3, 40], 'Spanish': [-3, 40], 'Madrid': [-3.7, 40.4],
+      'Turkey': [35, 39], 'Turkish': [35, 39], 'Ankara': [32.9, 39.9],
+      'Egypt': [30, 27], 'Egyptian': [30, 27], 'Cairo': [31.2, 30],
+      'Syria': [38, 35], 'Syrian': [38, 35], 'Damascus': [36.3, 33.5],
+      'Yemen': [48, 15], 'Yemeni': [48, 15],
+      'Lebanon': [35.8, 33.9], 'Beirut': [35.5, 33.9],
+      'Iraq': [44, 33], 'Iraqi': [44, 33], 'Baghdad': [44.4, 33.3],
+      'Afghanistan': [67, 33], 'Afghan': [67, 33], 'Kabul': [69.2, 34.5],
+      'Pakistan': [69, 30], 'Pakistani': [69, 30],
+      'Switzerland': [8, 47], 'Swiss': [8, 47], 'Zurich': [8.5, 47.4],
+      'Netherlands': [5, 52], 'Dutch': [5, 52], 'Amsterdam': [4.9, 52.4],
+      'Belgium': [4, 50.8], 'Brussels': [4.4, 50.8],
+      'Poland': [19, 52], 'Polish': [19, 52], 'Warsaw': [21, 52.2],
+      'Sweden': [15, 62], 'Swedish': [15, 62], 'Stockholm': [18, 59.3],
+      'Norway': [9, 62], 'Norwegian': [9, 62], 'Oslo': [10.7, 59.9],
+      'Finland': [26, 64], 'Finnish': [26, 64], 'Helsinki': [25, 60.2],
+      'Denmark': [10, 56], 'Danish': [10, 56], 'Copenhagen': [12.6, 55.7],
+      'Greece': [22, 39], 'Greek': [22, 39], 'Athens': [23.7, 38],
+      'Portugal': [-8, 39.5], 'Portuguese': [-8, 39.5], 'Lisbon': [-9.1, 38.7],
+      'Austria': [14, 47.5], 'Austrian': [14, 47.5], 'Vienna': [16.4, 48.2],
+      'Singapore': [104, 1.3], 'Hong Kong': [114, 22.3],
+      'Indonesia': [118, -2], 'Jakarta': [106.8, -6.2],
+      'Malaysia': [102, 4], 'Kuala Lumpur': [101.7, 3.1],
+      'Thailand': [101, 15], 'Bangkok': [100.5, 13.8],
+      'Vietnam': [106, 16], 'Hanoi': [105.8, 21],
+      'Philippines': [122, 12], 'Manila': [121, 14.6],
+      'South Africa': [25, -29], 'Johannesburg': [28, -26.2],
+      'Nigeria': [8, 10], 'Lagos': [3.4, 6.5],
+      'Argentina': [-64, -34], 'Buenos Aires': [-58.4, -34.6],
+      'Chile': [-71, -33], 'Santiago': [-70.7, -33.4],
+      'Colombia': [-74, 4], 'Bogota': [-74.1, 4.6],
+      'Venezuela': [-66, 8], 'Caracas': [-66.9, 10.5],
+      'Peru': [-76, -10], 'Lima': [-77, -12],
+    };
+    
+    // Analyze news titles and descriptions
+    news.forEach(article => {
+      const text = `${article.title || ''} ${article.description || ''}`.toLowerCase();
+      
+      Object.entries(countryToCoords).forEach(([keyword, coords]) => {
+        const keywordLower = keyword.toLowerCase();
+        // Count occurrences
+        const regex = new RegExp(`\\b${keywordLower}\\b`, 'gi');
+        const matches = text.match(regex);
+        if (matches) {
+          const key = `${coords[0]},${coords[1]}`;
+          if (!countryMentions[key]) {
+            countryMentions[key] = { coords, count: 0, keywords: new Set() };
+          }
+          countryMentions[key].count += matches.length;
+          countryMentions[key].keywords.add(keyword);
+        }
+      });
+    });
+    
+    // Convert to array and sort by count
+    return Object.values(countryMentions)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 15)
+      .map(item => ({
+        ...item,
+        keywords: Array.from(item.keywords),
+        intensity: Math.min(item.count / 5, 1) // Normalize intensity (0-1)
+      }));
+  }, [news]);
 
   // Load shipping data
   useEffect(() => {
