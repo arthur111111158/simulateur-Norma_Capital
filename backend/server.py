@@ -1882,8 +1882,14 @@ async def fetch_news(query: str = None, country: str = None, category: str = Non
                     url = 'https://newsapi.org/v2/everything'
                 else:
                     url = 'https://newsapi.org/v2/top-headlines'
+                    # NewsAPI requires country OR sources for top-headlines
+                    # Use country code matching language for better results
                     if country:
                         params['country'] = country
+                    elif lang == 'fr':
+                        params['country'] = 'fr'  # French news from France
+                    elif lang == 'en':
+                        params['country'] = 'us'  # English news from US by default
                     if category:
                         params['category'] = category
                 
