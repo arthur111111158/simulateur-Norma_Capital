@@ -242,6 +242,17 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // Get shareholders history for a company
+  const getShareholdersHistory = async (symbol) => {
+    try {
+      const response = await axios.get(`${API}/shareholders/${symbol}/history`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching shareholders history:', error);
+      return null;
+    }
+  };
+
   // ==================== NEW: COUNTRY DATA ====================
   
   // Get country data
