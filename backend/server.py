@@ -1132,6 +1132,253 @@ def get_shipping_stats(routes: List[ShippingRoute]) -> ShippingStats:
         volume_at_risk_percent=volume_at_risk
     )
 
+# ==================== COUNTRY DATA SERVICES ====================
+
+async def get_country_from_rest_countries(country_code: str) -> Optional[Dict]:
+    """Fetch basic country info from REST Countries API"""
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            # Try by ISO code first
+            response = await client.get(f"https://restcountries.com/v3.1/alpha/{country_code}")
+            if response.status_code == 200:
+                data = response.json()
+                if data and len(data) > 0:
+                    return data[0]
+            return None
+    except Exception as e:
+        logger.error(f"Error fetching REST Countries data for {country_code}: {e}")
+        return None
+
+async def get_world_bank_indicator(country_code: str, indicator: str) -> Optional[float]:
+    """Fetch a single indicator from World Bank API"""
+    try:
+        # Convert 2-letter to 3-letter code for World Bank
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            url = f"https://api.worldbank.org/v2/country/{country_code}/indicator/{indicator}?format=json&per_page=5&mrv=1"
+            response = await client.get(url)
+            if response.status_code == 200:
+                data = response.json()
+                if len(data) > 1 and data[1]:
+                    for item in data[1]:
+                        if item.get('value') is not None:
+                            return float(item['value'])
+        return None
+    except Exception as e:
+        logger.error(f"Error fetching World Bank indicator {indicator} for {country_code}: {e}")
+        return None
+
+async def get_world_bank_data(country_code: str) -> Dict[str, Optional[float]]:
+    """Fetch multiple indicators from World Bank API"""
+    results = {}
+    
+    # Fetch indicators in parallel
+    tasks = {}
+    for key, indicator in WORLD_BANK_INDICATORS.items():
+        tasks[key] = get_world_bank_indicator(country_code, indicator)
+    
+    # Execute all tasks
+    for key, task in tasks.items():
+        try:
+            results[key] = await task
+        except Exception:
+            results[key] = None
+    
+    return results
+
+def get_iso_code(country_name: str) -> str:
+    """Convert country name to ISO code"""
+    # Check direct mapping
+    if country_name in COUNTRY_NAME_TO_ISO:
+        return COUNTRY_NAME_TO_ISO[country_name]
+    
+    # Check if it's already an ISO code
+    if len(country_name) == 2:
+        return country_name.upper()
+    
+    # Try common variations
+    name_upper = country_name.upper()
+    for key, value in COUNTRY_NAME_TO_ISO.items():
+        if key.upper() == name_upper:
+            return value
+    
+    # Return first 2 letters as fallback (not ideal but handles many cases)
+    return country_name[:2].upper()
+
+async def get_cached_country_data(country_code: str) -> Optional[Dict]:
+    """Get country data from MongoDB cache if fresh"""
+    try:
+        cutoff = datetime.now(timezone.utc) - timedelta(days=7)  # Cache for 7 days
+        
+        cached = await db.country_cache.find_one({
+            "country_code": country_code.upper(),
+            "cached_at": {"$gte": cutoff}
+        })
+        
+        if cached:
+            logger.info(f"Country cache hit for {country_code}")
+            # Remove MongoDB _id before returning
+            cached.pop('_id', None)
+            return cached.get("data")
+        return None
+    except Exception as e:
+        logger.error(f"Error reading country cache: {e}")
+        return None
+
+async def cache_country_data(country_code: str, data: Dict):
+    """Save country data to MongoDB cache"""
+    try:
+        await db.country_cache.update_one(
+            {"country_code": country_code.upper()},
+            {
+                "$set": {
+                    "data": data,
+                    "cached_at": datetime.now(timezone.utc)
+                }
+            },
+            upsert=True
+        )
+        logger.info(f"Cached country data for {country_code}")
+    except Exception as e:
+        logger.error(f"Error caching country data: {e}")
+
+def extract_industries_from_economy(economy_info: str) -> List[str]:
+    """Extract main industries from economy description"""
+    # Common industry keywords
+    industries = []
+    keywords = [
+        "agriculture", "mining", "oil", "gas", "petroleum", "manufacturing",
+        "technology", "finance", "banking", "tourism", "services", "fishing",
+        "textiles", "automotive", "electronics", "pharmaceuticals", "chemicals",
+        "steel", "construction", "real estate", "telecommunications", "aerospace",
+        "food processing", "machinery", "shipbuilding", "renewable energy"
+    ]
+    
+    if economy_info:
+        economy_lower = economy_info.lower()
+        for keyword in keywords:
+            if keyword in economy_lower:
+                industries.append(keyword.title())
+    
+    return industries[:5]  # Return top 5
+
+async def fetch_country_data(country_name_or_code: str) -> Optional[CountryData]:
+    """Fetch comprehensive country data"""
+    # Determine ISO code
+    if len(country_name_or_code) == 2:
+        country_code = country_name_or_code.upper()
+    elif len(country_name_or_code) == 3:
+        country_code = country_name_or_code.upper()
+    else:
+        country_code = get_iso_code(country_name_or_code)
+    
+    # Check cache first
+    cached = await get_cached_country_data(country_code)
+    if cached:
+        return CountryData(**cached)
+    
+    # Fetch from REST Countries API
+    rest_data = await get_country_from_rest_countries(country_code)
+    if not rest_data:
+        logger.warning(f"No REST Countries data for {country_code}")
+        return None
+    
+    # Fetch from World Bank API
+    wb_data = await get_world_bank_data(country_code)
+    
+    # Build basic info
+    basic = CountryBasicInfo(
+        name=rest_data.get('name', {}).get('common', country_name_or_code),
+        official_name=rest_data.get('name', {}).get('official'),
+        iso_code=rest_data.get('cca2', country_code),
+        iso_code_3=rest_data.get('cca3'),
+        region=rest_data.get('region'),
+        subregion=rest_data.get('subregion'),
+        capital=rest_data.get('capital', [None])[0] if rest_data.get('capital') else None,
+        languages=list(rest_data.get('languages', {}).values()),
+        flag_url=rest_data.get('flags', {}).get('svg'),
+        coat_of_arms_url=rest_data.get('coatOfArms', {}).get('svg'),
+        area=rest_data.get('area'),
+        borders=rest_data.get('borders', []),
+        timezones=rest_data.get('timezones', []),
+        continent=rest_data.get('continents', [None])[0] if rest_data.get('continents') else None
+    )
+    
+    # Get currency info
+    currencies = rest_data.get('currencies', {})
+    currency_code = list(currencies.keys())[0] if currencies else None
+    currency_name = currencies.get(currency_code, {}).get('name') if currency_code else None
+    
+    # Build economic data
+    economic = CountryEconomicData(
+        gdp=wb_data.get('gdp'),
+        gdp_per_capita=wb_data.get('gdp_per_capita'),
+        gdp_growth=wb_data.get('gdp_growth'),
+        inflation=wb_data.get('inflation'),
+        unemployment=wb_data.get('unemployment'),
+        exports=wb_data.get('exports'),
+        imports=wb_data.get('imports'),
+        fdi_inflow=wb_data.get('fdi'),
+        external_debt=wb_data.get('external_debt'),
+        currency=currency_name,
+        currency_code=currency_code
+    )
+    
+    # Calculate trade balance
+    if economic.exports and economic.imports:
+        economic.trade_balance = economic.exports - economic.imports
+    
+    # Build demographic data
+    population = wb_data.get('population')
+    area = rest_data.get('area')
+    
+    demographic = CountryDemographicData(
+        population=int(population) if population else None,
+        population_growth=wb_data.get('population_growth'),
+        population_density=population / area if population and area else None,
+        life_expectancy=wb_data.get('life_expectancy'),
+        urban_population_percent=wb_data.get('urban_population'),
+        fertility_rate=wb_data.get('fertility_rate'),
+        literacy_rate=wb_data.get('literacy')
+    )
+    
+    # Get HDI from static data (World Bank doesn't have it directly)
+    hdi_data = {
+        "NO": 0.961, "IE": 0.945, "CH": 0.962, "HK": 0.952, "IS": 0.959,
+        "DE": 0.942, "SE": 0.947, "AU": 0.951, "NL": 0.941, "DK": 0.948,
+        "FI": 0.940, "SG": 0.939, "GB": 0.929, "BE": 0.937, "NZ": 0.937,
+        "CA": 0.936, "US": 0.921, "AT": 0.916, "IL": 0.919, "JP": 0.925,
+        "KR": 0.925, "FR": 0.903, "ES": 0.905, "IT": 0.895, "PT": 0.866,
+        "GR": 0.887, "PL": 0.876, "CN": 0.768, "BR": 0.754, "MX": 0.758,
+        "RU": 0.822, "TR": 0.838, "SA": 0.875, "AE": 0.911, "IN": 0.633,
+        "ZA": 0.713, "EG": 0.731, "NG": 0.539, "ID": 0.713, "MY": 0.803,
+        "TH": 0.800, "VN": 0.703, "PH": 0.699, "PK": 0.544, "BD": 0.661,
+    }
+    demographic.hdi = hdi_data.get(country_code)
+    
+    # Build final country data
+    country_data = CountryData(
+        basic=basic,
+        economic=economic,
+        demographic=demographic,
+        top_industries=[],
+        major_exports=[],
+        major_imports=[],
+        risk_factors=[],
+        last_updated=datetime.now(timezone.utc)
+    )
+    
+    # Add risk factors based on conflicts
+    conflicts_data = await get_cached_conflicts()
+    for conflict in conflicts_data:
+        conflict_dict = conflict.model_dump() if hasattr(conflict, 'model_dump') else conflict
+        if country_name_or_code.lower() in conflict_dict.get('country', '').lower():
+            country_data.risk_factors.append(conflict_dict.get('title', 'Unknown conflict'))
+    
+    # Cache the data
+    await cache_country_data(country_code, country_data.model_dump())
+    
+    return country_data
+
 # ==================== TECHNICAL INDICATORS CALCULATION ====================
 
 def calculate_sma(prices: List[float], period: int) -> Optional[float]:
