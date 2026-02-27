@@ -15,6 +15,7 @@ import asyncio
 import numpy as np
 from enum import Enum
 import json
+import pandas as pd
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
