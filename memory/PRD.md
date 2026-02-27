@@ -53,6 +53,27 @@ Air Liquide, Airbus, Alstom, Atos, AXA, BNP Paribas, Bouygues, Bureau Veritas, C
 
 ## What's Been Implemented
 
+### 2026-02-27 - Shareholders Data + Supply Chain Enhancement
+- **NEW: Major Shareholders API** (`/api/shareholders/{symbol}`):
+  - % held by insiders and institutions
+  - List of major holders with type (family, government, institutional, corporate, mutual_fund)
+  - Country of holder
+  - Detailed data for 15+ major French companies (LVMH, BNP, Société Générale, Airbus, etc.)
+  - Fallback to yfinance institutional_holders for other stocks
+
+- **Enhanced Supply Chain Data**:
+  - Complete supply chain for 15+ major French companies
+  - Includes subsidiaries, suppliers, customers, partners
+  - Risk levels and revenue impact percentages
+  - Examples: LVMH (Sephora, Tiffany, Hennessy), Airbus (Safran, GE, Rolls-Royce)
+
+- **UI Updates** (QuotePage.jsx):
+  - New "Major Shareholders" section with icons by holder type
+  - Purple icon for Family holders
+  - Blue icon for Government holders
+  - Amber icon for Institutional holders
+  - Displays % ownership and country
+
 ### 2026-02-27 - News Sources Change (Yahoo Finance + Boursorama)
 - **Replaced NewsAPI** with:
   - **Yahoo Finance** for English financial news (stock market, earnings, S&P 500, etc.)
