@@ -795,6 +795,10 @@ const WorldMapPage = () => {
                       <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                       <span className="text-zinc-400">Conflict Zone</span>
                     </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-amber-500/50 rounded-full border border-amber-500"></div>
+                      <span className="text-zinc-400">News Hotspot</span>
+                    </div>
                   </div>
                 </div>
 
@@ -803,19 +807,43 @@ const WorldMapPage = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-8 w-8 p-0 bg-zinc-900"
-                    onClick={() => setZoom(z => Math.min(z * 1.5, 8))}
+                    className="h-8 w-8 p-0 bg-zinc-900 hover:bg-zinc-800"
+                    onClick={handleZoomIn}
+                    title="Zoom in"
                   >
-                    +
+                    <ZoomIn className="w-4 h-4" />
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-8 w-8 p-0 bg-zinc-900"
-                    onClick={() => setZoom(z => Math.max(z / 1.5, 1))}
+                    className="h-8 w-8 p-0 bg-zinc-900 hover:bg-zinc-800"
+                    onClick={handleZoomOut}
+                    title="Zoom out"
                   >
-                    -
+                    <ZoomOut className="w-4 h-4" />
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-8 p-0 bg-zinc-900 hover:bg-zinc-800"
+                    onClick={handleReset}
+                    title="Reset view"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                {/* Zoom Level Indicator */}
+                <div className="absolute top-4 right-4 bg-zinc-900/90 border border-zinc-800 rounded-sm px-2 py-1">
+                  <span className="text-[10px] text-zinc-400">Zoom: </span>
+                  <span className="text-[10px] font-mono text-white">{zoom.toFixed(1)}x</span>
+                </div>
+
+                {/* Instructions */}
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-zinc-900/80 border border-zinc-800 rounded-sm px-3 py-1.5">
+                  <p className="text-[10px] text-zinc-400">
+                    🖱️ Scroll to zoom • Drag to pan • Click for details
+                  </p>
                 </div>
               </div>
             </CardContent>
