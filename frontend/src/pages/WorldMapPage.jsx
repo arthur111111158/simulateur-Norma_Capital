@@ -1257,6 +1257,57 @@ const WorldMapPage = () => {
           {/* Default: Routes List or Risk Summary */}
           {!selectedCountry && !selectedRoute && !selectedConflict && (
             <>
+              {/* News Hotspots Panel - shown when News layer is active */}
+              {activeLayer === 'news' && newsHotspots.length > 0 && (
+                <Card className="nexus-card border-amber-500/30">
+                  <CardHeader className="card-header-terminal">
+                    <CardTitle className="card-header-title flex items-center gap-2">
+                      <Newspaper className="w-4 h-4 text-amber-500" />
+                      News Hotspots
+                    </CardTitle>
+                    <Badge className="bg-amber-500/20 text-amber-400 rounded-none text-[10px]">
+                      {newsHotspots.length} regions
+                    </Badge>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <ScrollArea className="h-[320px]">
+                      {newsHotspots.map((hotspot, i) => (
+                        <div
+                          key={i}
+                          className="p-3 border-b border-zinc-800/50 hover:bg-zinc-800/30 cursor-pointer"
+                          onClick={() => zoomToLocation(hotspot.coords, 3)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-sm flex items-center justify-center flex-shrink-0 bg-amber-500/20 border border-amber-500/30">
+                              <span className="font-mono text-lg text-amber-400">{hotspot.count}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm text-white font-medium">
+                                {hotspot.keywords.slice(0, 2).join(', ')}
+                              </h4>
+                              <p className="text-[10px] text-zinc-500 mt-0.5">
+                                {hotspot.keywords.length > 2 && `+${hotspot.keywords.length - 2} more terms`}
+                              </p>
+                              <div className="mt-1.5">
+                                <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full"
+                                    style={{ width: `${hotspot.intensity * 100}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-zinc-600 flex-shrink-0" />
+                          </div>
+                        </div>
+                      ))}
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Routes/Conflicts List - shown for other layers */}
+              {activeLayer !== 'news' && (
               <Card className="nexus-card">
                 <CardHeader className="card-header-terminal">
                   <CardTitle className="card-header-title flex items-center gap-2">
